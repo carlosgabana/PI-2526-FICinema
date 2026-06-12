@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Registro</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container">
+            <h1>Crear cuenta</h1>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" class="auth-form" novalidate>
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+
+                        {% if field.name == "username" %}
+                            <p id="username-status" class="field-status oculto"></p>
+                        {% endif %}
+
+                        {% if field.name == "email" %}
+                            <p id="email-status" class="field-status oculto"></p>
+                        {% endif %}
+
+                        {% if field.name == "password1" %}
+                            <div id="password-rules" class="password-rules oculto">
+                                <p class="password-rules-title">La contraseña debe cumplir:</p>
+                                <p id="rule-length" class="password-rule">Mínimo 8 caracteres</p>
+                                <p id="rule-number" class="password-rule">Al menos un número</p>
+                                <p id="rule-letter" class="password-rule">Al menos una letra</p>
+                                <p id="rule-common" class="password-rule">No ser una contraseña demasiado simple</p>
+                            </div>
+                        {% endif %}
+
+                        {% if field.name == "password2" %}
+                            <p id="password-match" class="password-match oculto"></p>
+                        {% endif %}
+
+                        {% if field.errors %}
+                            {% for error in field.errors %}
+                                <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn-trailer">Registrarse</button>
+            </form>
+
+            <p class="auth-link">
+                ¿Ya tienes cuenta?
+                <a href="{% url 'login' %}">Inicia sesión</a>
+            </p>
+        </section>
+    </main>
+
+   <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+
+    <script src="{% static 'js/register.js' %}"></script>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

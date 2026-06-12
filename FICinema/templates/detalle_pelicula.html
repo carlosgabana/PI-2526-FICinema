@@ -1,0 +1,1041 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - {% if pelicula %}{{ pelicula.title }}{% else %}Error{% endif %}</title>
+
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+
+        {% if messages %}
+            {% for message in messages %}
+                <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">
+                    {{ message }}
+                </p>
+            {% endfor %}
+        {% endif %}
+
+        {% if error %}
+
+            <section class="mensaje-error">
+
+                <p>
+                    {{ error }}
+                </p>
+
+                <a href="{% url 'index_peliculas' %}"
+                   class="btn-trailer">
+
+                    Volver a cartelera
+
+                </a>
+
+            </section>
+
+        {% endif %}
+
+        {% if pelicula %}
+
+            <a href="{% url 'index_peliculas' %}"
+               class="btn-volver">
+
+                ← Volver a cartelera
+
+            </a>
+
+            <h1 class="titulo-detalle">
+                {{ pelicula.title }}
+            </h1>
+
+            <section class="detalle-pelicula-container">
+
+                <div class="poster">
+
+                    {% if poster_url %}
+
+                        <img src="{{ poster_url }}"
+                             alt="Cartel de la película {{ pelicula.title }}">
+
+                    {% else %}
+
+                        <div class="no-poster">
+                            Sin imagen
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="informacion-pelicula">
+
+                    {% if video_key %}
+
+                        <section class="trailer-embed-section" aria-label="Tráiler de {{ pelicula.title }}">
+                            <div class="trailer-embed-wrapper">
+                                <iframe
+                                    src="{{ youtube_embed_url }}"
+                                    title="Tráiler de {{ pelicula.title }}"
+                                    loading="lazy"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowfullscreen
+                                    referrerpolicy="strict-origin-when-cross-origin">
+                                </iframe>
+                            </div>
+
+                            <a href="{{ youtube_watch_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="btn-trailer btn-trailer-secondary">
+
+                                Ver tráiler oficial
+
+                            </a>
+
+                            <p class="trailer-helper">
+                                Si el reproductor no carga por restricciones de YouTube, abre el vídeo con el botón.
+                            </p>
+                        </section>
+
+                    {% else %}
+
+                        <p class="no-video">
+                            Sin vídeo disponible
+                        </p>
+
+                    {% endif %}
+
+                    {% if user.is_authenticated and not user.is_staff %}
+                        <form method="post"
+                              action="{% url 'alternar_favorito' %}"
+                              class="favorite-form favorite-form-detail">
+                            {% csrf_token %}
+                            <input type="hidden" name="movie_id" value="{{ pelicula.id }}">
+                            <input type="hidden" name="titulo" value="{{ pelicula.title }}">
+                            <input type="hidden" name="poster_url" value="{{ poster_url }}">
+                            <input type="hidden" name="sinopsis" value="{{ pelicula.overview }}">
+                            <input type="hidden" name="fecha_estreno" value="{{ pelicula.release_date }}">
+                            <input type="hidden" name="valoracion" value="{{ pelicula.vote_average }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="origen" value="detalle">
+                            <button type="submit"
+                                    class="btn-base favorite-detail-button {% if es_favorita %}is-favorite{% endif %}"
+                                    aria-label="{% if es_favorita %}Quitar {{ pelicula.title }} de favoritos{% else %}Añadir {{ pelicula.title }} a favoritos{% endif %}">
+                                {% if es_favorita %}
+                                    ♥ Quitar de favoritos
+                                {% else %}
+                                    ♡ Añadir a favoritos
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <div class="datos-pelicula">
+
+                        <p>
+                            <strong>Fecha de estreno:</strong>
+
+                            {% if pelicula.release_date %}
+                                {{ pelicula.release_date }}
+                            {% else %}
+                                Fecha no disponible
+                            {% endif %}
+                        </p>
+
+                        <p>
+                            <strong>Duración:</strong>
+
+                            {% if pelicula.runtime %}
+                                {{ pelicula.runtime }} minutos
+                            {% else %}
+                                Duración no disponible
+                            {% endif %}
+                        </p>
+
+                        <p>
+                            <strong>Valoración:</strong>
+                            {{ pelicula.vote_average }}/10
+                        </p>
+
+                        <p>
+                            <strong>Calificación orientativa:</strong>
+                            {{ calificacion_edad|default:"No disponible" }}
+                        </p>
+
+                        <p class="overview">
+
+                            {% if pelicula.overview %}
+                                {{ pelicula.overview }}
+                            {% else %}
+                                Sin sinopsis disponible.
+                            {% endif %}
+
+                        </p>
+
+                    </div>
+
+                    <div class="movie-stats-grid">
+
+                        <div class="movie-stat-card">
+                            <span class="movie-stat-number">
+                                {{ total_sesiones|default:0 }}
+                            </span>
+
+                            <span class="movie-stat-label">
+                                Sesiones disponibles
+                            </span>
+                        </div>
+
+                        <div class="movie-stat-card">
+                            <span class="movie-stat-number">
+                                {{ entradas_vendidas|default:0 }}
+                            </span>
+
+                            <span class="movie-stat-label">
+                                Entradas vendidas
+                            </span>
+                        </div>
+
+                        <div class="movie-stat-card">
+                            <span class="movie-stat-number">
+                                {{ ocupacion_media|default:0 }}%
+                            </span>
+
+                            <span class="movie-stat-label">
+                                Ocupación media
+                            </span>
+                        </div>
+
+                        <div class="movie-stat-card">
+                            <span class="movie-stat-number">
+                                {% if resumen_resenas.total %}
+                                    {{ resumen_resenas.media }}/5
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+
+                            <span class="movie-stat-label">
+                                Valoración usuarios
+                            </span>
+                        </div>
+
+                    </div>
+
+                    {% if user.is_staff %}
+
+                        <div class="mensaje info" role="status">
+
+                            Esta cuenta pertenece al personal interno de FICinema.
+                            La compra de entradas y reserva de asientos está
+                            deshabilitada para cuentas staff.
+
+                        </div>
+
+                        <div class="perfil-actions">
+
+                            <a href="{% url 'panel_sesiones' %}"
+                               class="btn-base btn-secondary">
+
+                                Ir a gestión de sesiones
+
+                            </a>
+
+                            <a href="{% url 'panel_interno' %}"
+                               class="btn-base btn-primary">
+
+                                Volver al panel interno
+
+                            </a>
+
+                        </div>
+
+                    {% elif tiene_sesiones_disponibles %}
+
+                        {% if pelicula_en_ultimas_sesiones %}
+                            <div class="mensaje info last-sessions-notice" role="status">
+                                Esta película ya no forma parte de la cartelera principal.
+                                Se conservan solo las sesiones futuras que ya tenían entradas vendidas,
+                                y puedes comprar asientos libres para completar esas sesiones.
+                            </div>
+                        {% endif %}
+
+                        <form method="post"
+                              action="{% url 'confirmar_entrada' %}"
+                              class="form-compra-entrada"
+                              id="form-compra-entrada">
+
+                            {% csrf_token %}
+
+                            <input type="hidden"
+                                   id="sesion_id"
+                                   name="sesion_id">
+
+                            <input type="hidden"
+                                   id="asientos"
+                                   name="asientos">
+
+                            <div id="error-seleccion-entrada"
+                                 class="mensaje error oculto" role="alert">
+
+                                Debes seleccionar una sesión y al menos un asiento para comprar entradas.
+
+                            </div>
+
+                            <section class="seleccion-cine">
+
+                                <h2 class="subtitulo-seccion">
+                                    Selecciona tu sesión
+                                </h2>
+
+                                <div class="seleccionar-fecha">
+
+                                    <label for="fecha">
+                                        Fecha:
+                                    </label>
+
+                                    <select id="fecha"
+                                            name="fecha"
+                                            required>
+
+                                        {% for item in dias_disponibles %}
+
+                                            <option value="{{ item.fecha }}">
+                                                {{ item.dia_semana }}
+                                            </option>
+
+                                        {% empty %}
+
+                                            <option value="">
+                                                No hay fechas disponibles
+                                            </option>
+
+                                        {% endfor %}
+
+                                    </select>
+
+                                </div>
+
+                                <div class="seleccionar-sesion">
+
+                                    <label for="sesion_selector">
+                                        Hora y sala:
+                                    </label>
+
+                                    <select id="sesion_selector" required>
+
+                                        <option value="">
+                                            Selecciona una sesión
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div id="info-sesion"
+                                     class="info-sesion">
+
+                                    Selecciona una fecha y una sesión para ver la sala.
+
+                                </div>
+
+                            </section>
+
+                            <section class="seleccion-asientos">
+
+                                <h2 class="subtitulo-seccion">
+                                    Selecciona tus asientos
+                                </h2>
+
+                                <div class="leyenda-asientos">
+
+                                    <span>
+                                        <span class="leyenda-cuadro libre"></span>
+                                        Libre
+                                    </span>
+
+                                    <span>
+                                        <span class="leyenda-cuadro seleccionado"></span>
+                                        Seleccionado
+                                    </span>
+
+                                    <span>
+                                        <span class="leyenda-cuadro ocupado"></span>
+                                        Ocupado
+                                    </span>
+
+                                </div>
+
+                                <div class="asientos-scroll-box" aria-label="Plano de asientos de la sala">
+                                    <div class="pantalla-cine">
+                                        PANTALLA
+                                    </div>
+
+                                    <div id="plano-asientos"
+                                         class="plano-asientos">
+
+                                        <div class="seat-empty-state" role="status">Selecciona una fecha y una sesión para ver el plano de asientos.</div>
+
+                                    </div>
+                                </div>
+
+                                <p id="asiento-seleccionado-texto"
+                                   class="asiento-seleccionado-texto">
+
+                                    Ningún asiento seleccionado.
+
+                                </p>
+
+                            </section>
+
+                            {% if user.is_authenticated %}
+
+                                <button type="submit"
+                                        class="btn-base btn-primary">
+
+                                    Comprar entrada(s)
+
+                                </button>
+
+                            {% else %}
+
+                                <a href="{% url 'login' %}"
+                                   class="btn-base btn-primary">
+
+                                    Inicia sesión para comprar entrada
+
+                                </a>
+
+                            {% endif %}
+
+                        </form>
+
+                    {% else %}
+
+                        <section class="no-sessions-box">
+                            <span class="badge-status">Fuera de cartelera</span>
+                            <h2>No hay sesiones disponibles</h2>
+                            <p>
+                                Esta película se muestra como recomendación o ficha informativa, pero ahora mismo
+                                no está programada en FICinema. Puedes ver su tráiler, consultar su sinopsis y
+                                guardarla en favoritos para volver a ella más adelante.
+                            </p>
+
+                            <div class="perfil-actions">
+                                {% if user.is_authenticated and not user.is_staff %}
+                                    <form method="post"
+                                          action="{% url 'alternar_favorito' %}"
+                                          class="favorite-form favorite-form-detail">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="movie_id" value="{{ pelicula.id }}">
+                                        <input type="hidden" name="titulo" value="{{ pelicula.title }}">
+                                        <input type="hidden" name="sinopsis" value="{{ pelicula.overview }}">
+                                        <input type="hidden" name="poster_url" value="{{ poster_url }}">
+                                        <input type="hidden" name="fecha_estreno" value="{{ pelicula.release_date }}">
+                                        <input type="hidden" name="valoracion" value="{{ pelicula.vote_average }}">
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <input type="hidden" name="origen" value="detalle">
+
+                                        <button type="submit"
+                                                class="btn-base favorite-detail-button {% if es_favorita %}is-favorite{% endif %}">
+                                            {% if es_favorita %}
+                                                ♥ Quitar de favoritos
+                                            {% else %}
+                                                ♡ Guardar en favoritos
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">
+                                    Volver a cartelera
+                                </a>
+
+                                <a href="{% url 'mis_recomendaciones' %}" class="btn-base btn-secondary">
+                                    Ver recomendaciones
+                                </a>
+                            </div>
+                        </section>
+
+                    {% endif %}
+
+                </div>
+
+            </section>
+
+
+            <section class="reviews-section" aria-labelledby="titulo-resenas">
+                <div class="reviews-header">
+                    <div>
+                        <span class="badge-status">Opiniones</span>
+                        <h2 id="titulo-resenas">Reseñas de usuarios</h2>
+                        <p>
+                            Consulta valoraciones internas de FICinema y comparte tu opinión después de ver una película.
+                        </p>
+                    </div>
+
+                    <div class="reviews-summary-card">
+                        {% if resumen_resenas.total %}
+                            <strong>{{ resumen_resenas.media }}/5</strong>
+                            <span>{{ resumen_resenas.total }} reseña{% if resumen_resenas.total != 1 %}s{% endif %}</span>
+                        {% else %}
+                            <strong>Sin reseñas</strong>
+                            <span>Sé la primera persona en opinar</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if user.is_authenticated and not user.is_staff and pelicula %}
+                    <form method="post"
+                          action="{% url 'guardar_resena' pelicula.id %}"
+                          class="review-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="titulo_pelicula" value="{{ pelicula.title }}">
+
+                        <div class="review-form-grid">
+                            <label for="puntuacion">
+                                Tu puntuación
+                            </label>
+
+                            <select id="puntuacion" name="puntuacion" required>
+                                <option value="">Selecciona una puntuación</option>
+                                <option value="5" {% if resena_usuario and resena_usuario.puntuacion == 5 %}selected{% endif %}>5 - Excelente</option>
+                                <option value="4" {% if resena_usuario and resena_usuario.puntuacion == 4 %}selected{% endif %}>4 - Muy buena</option>
+                                <option value="3" {% if resena_usuario and resena_usuario.puntuacion == 3 %}selected{% endif %}>3 - Correcta</option>
+                                <option value="2" {% if resena_usuario and resena_usuario.puntuacion == 2 %}selected{% endif %}>2 - Floja</option>
+                                <option value="1" {% if resena_usuario and resena_usuario.puntuacion == 1 %}selected{% endif %}>1 - Mala</option>
+                            </select>
+                        </div>
+
+                        <label for="comentario-resena">
+                            Comentario
+                        </label>
+
+                        <textarea id="comentario-resena"
+                                  name="comentario"
+                                  maxlength="600"
+                                  rows="4"
+                                  placeholder="Escribe una reseña breve y respetuosa.">{% if resena_usuario %}{{ resena_usuario.comentario }}{% endif %}</textarea>
+
+                        <div class="review-actions">
+                            <button type="submit" class="btn-base btn-primary">
+                                {% if resena_usuario %}
+                                    Actualizar reseña
+                                {% else %}
+                                    Publicar reseña
+                                {% endif %}
+                            </button>
+
+                            {% if resena_usuario %}
+                                <button type="submit"
+                                        form="eliminar-resena-form"
+                                        class="btn-base btn-danger">
+                                    Eliminar reseña
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                    {% if resena_usuario %}
+                        <form method="post"
+                              action="{% url 'eliminar_resena' pelicula.id %}"
+                              id="eliminar-resena-form"
+                              class="hidden-form">
+                            {% csrf_token %}
+                        </form>
+                    {% endif %}
+                {% elif not user.is_authenticated %}
+                    <div class="mensaje info" role="status">
+                        Inicia sesión para publicar tu reseña.
+                    </div>
+                {% endif %}
+
+                <div class="reviews-list">
+                    {% for resena in resenas_pelicula %}
+                        <article class="review-card">
+                            <div class="review-card-header">
+                                <strong>{{ resena.usuario.username }}</strong>
+                                <span>{{ resena.puntuacion }}/5</span>
+                            </div>
+
+                            {% if resena.comentario %}
+                                <p>{{ resena.comentario }}</p>
+                            {% else %}
+                                <p class="review-muted">Esta persona dejó solo puntuación.</p>
+                            {% endif %}
+
+                            <small>
+                                Actualizada el {{ resena.actualizada_en|date:"d/m/Y H:i" }}
+                            </small>
+                        </article>
+                    {% empty %}
+                        <div class="empty-reviews-box">
+                            Todavía no hay reseñas visibles para esta película.
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+
+            {% if recomendaciones_detalle %}
+                <section class="recommendations-section recommendations-detail" aria-labelledby="titulo-recomendaciones-detalle">
+                    <div class="recommendations-header">
+                        <div>
+                            <span class="badge-status">Recomendaciones</span>
+                            <h2 id="titulo-recomendaciones-detalle">Películas similares</h2>
+                            <p>
+                                Propuestas relacionadas con esta película y con la actividad de FICinema.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="recommendations-grid">
+                        {% for recomendacion in recomendaciones_detalle %}
+                            <article class="recommendation-card">
+                                <a href="{% url 'detalle_pelicula' recomendacion.id %}" class="recommendation-poster">
+                                    {% if recomendacion.poster_url %}
+                                        <img src="{{ recomendacion.poster_url }}"
+                                             alt="Cartel de la película {{ recomendacion.title }}"
+                                             loading="lazy">
+                                    {% else %}
+                                        <div class="no-poster-card recommendation-no-poster">Sin imagen</div>
+                                    {% endif %}
+                                </a>
+
+                                <div class="recommendation-info">
+                                    <div class="recommendation-badges">
+                                        <span class="recommendation-reason">{{ recomendacion.motivo }}</span>
+                                        {% if recomendacion.tiene_sesiones %}
+                                            <span class="availability-badge availability-available">En cartelera</span>
+                                        {% else %}
+                                            <span class="availability-badge availability-unavailable">No disponible en cartelera</span>
+                                        {% endif %}
+                                    </div>
+                                    <h3>
+                                        <a href="{% url 'detalle_pelicula' recomendacion.id %}">
+                                            {{ recomendacion.title }}
+                                        </a>
+                                    </h3>
+
+                                    <p class="recommendation-meta">
+                                        {% if recomendacion.release_date %}
+                                            {{ recomendacion.release_date }} ·
+                                        {% endif %}
+                                        {{ recomendacion.vote_average }}/10
+                                    </p>
+
+                                    <p class="recommendation-overview">
+                                        {{ recomendacion.overview }}
+                                    </p>
+
+                                    <div class="recommendation-actions">
+                                        <a href="{% url 'detalle_pelicula' recomendacion.id %}"
+                                           class="btn-base {% if recomendacion.tiene_sesiones %}btn-primary{% else %}btn-secondary{% endif %}">
+                                            {% if recomendacion.tiene_sesiones %}
+                                                Ver sesiones
+                                            {% else %}
+                                                Ver detalles
+                                            {% endif %}
+                                        </a>
+
+                                        {% if user.is_authenticated and not user.is_staff %}
+                                            <form method="post"
+                                                  action="{% url 'alternar_favorito' %}"
+                                                  class="favorite-form recommendation-favorite-form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="movie_id" value="{{ recomendacion.id }}">
+                                                <input type="hidden" name="titulo" value="{{ recomendacion.title }}">
+                                                <input type="hidden" name="poster_url" value="{{ recomendacion.poster_url }}">
+                                                <input type="hidden" name="sinopsis" value="{{ recomendacion.overview }}">
+                                                <input type="hidden" name="fecha_estreno" value="{{ recomendacion.release_date }}">
+                                                <input type="hidden" name="valoracion" value="{{ recomendacion.vote_average }}">
+                                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                <input type="hidden" name="origen" value="detalle">
+                                                <button type="submit" class="btn-base btn-secondary">
+                                                    Guardar
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+        {% endif %}
+
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+
+    {% if not user.is_staff %}
+
+        {{ sesiones_por_dia|json_script:"sesiones-por-dia-data" }}
+        {{ asientos_por_sesion|json_script:"asientos-por-sesion-data" }}
+
+        <script>
+
+            const sesionesPorDia = JSON.parse(
+                document.getElementById("sesiones-por-dia-data").textContent
+            );
+
+            const asientosPorSesion = JSON.parse(
+                document.getElementById("asientos-por-sesion-data").textContent
+            );
+
+            const fechaSelect = document.getElementById("fecha");
+            const sesionSelect = document.getElementById("sesion_selector");
+            const sesionInput = document.getElementById("sesion_id");
+            const asientoInput = document.getElementById("asientos");
+            const planoAsientos = document.getElementById("plano-asientos");
+            const infoSesion = document.getElementById("info-sesion");
+            const asientoTexto = document.getElementById("asiento-seleccionado-texto");
+            const formCompraEntrada = document.getElementById("form-compra-entrada");
+            const errorSeleccionEntrada = document.getElementById("error-seleccion-entrada");
+
+            let asientosSeleccionados = new Set();
+            let arrastreActivo = false;
+            let modoArrastreSeleccion = true;
+            let asientosProcesadosArrastre = new Set();
+            let pointerActivo = null;
+            let movimientoRealizado = false;
+
+            function actualizarResumenAsientos() {
+                const asientos = Array.from(asientosSeleccionados).sort();
+                asientoInput.value = asientos.join(",");
+
+                if (asientos.length === 0) {
+                    asientoTexto.textContent = "Ningún asiento seleccionado.";
+                } else if (asientos.length === 1) {
+                    asientoTexto.textContent = `1 asiento seleccionado: ${asientos[0]}`;
+                } else {
+                    asientoTexto.textContent = `${asientos.length} asientos seleccionados: ${asientos.join(", ")}`;
+                }
+
+                if (errorSeleccionEntrada) {
+                    errorSeleccionEntrada.classList.add("oculto");
+                }
+            }
+
+            function limpiarSeleccionAsiento() {
+                asientosSeleccionados.clear();
+                actualizarResumenAsientos();
+            }
+
+            function cargarSesiones() {
+                const fechaSeleccionada = fechaSelect.value;
+                const sesiones = sesionesPorDia[fechaSeleccionada] || [];
+
+                sesionSelect.innerHTML = "";
+                sesionInput.value = "";
+                limpiarSeleccionAsiento();
+
+                const opcionInicial = document.createElement("option");
+                opcionInicial.value = "";
+                opcionInicial.textContent = "Selecciona una sesión";
+                sesionSelect.appendChild(opcionInicial);
+
+                if (sesiones.length === 0) {
+                    const opcion = document.createElement("option");
+                    opcion.value = "";
+                    opcion.textContent = "No hay sesiones disponibles";
+                    sesionSelect.appendChild(opcion);
+
+                    infoSesion.innerHTML =
+                        '<strong>No hay sesiones disponibles</strong><span>Prueba otra fecha o vuelve a cartelera.</span>';
+
+                    planoAsientos.innerHTML =
+                        '<div class="seat-empty-state" role="status"><strong>Sin sesiones en esta fecha</strong><span>Cuando elijas una fecha con sesión disponible, aquí aparecerá el mapa de asientos.</span></div>';
+                    return;
+                }
+
+                sesiones.forEach((sesion) => {
+                    const opcion = document.createElement("option");
+                    opcion.value = sesion.id;
+                    opcion.textContent =
+                        `${sesion.hora} - ${sesion.fin} | ${sesion.sala} | ${sesion.duracion} min`;
+                    sesionSelect.appendChild(opcion);
+                });
+
+                sesionSelect.selectedIndex = 1;
+                cargarPlanoAsientos();
+            }
+
+            function cargarPlanoAsientos() {
+                const sesionId = sesionSelect.value;
+                sesionInput.value = sesionId;
+                limpiarSeleccionAsiento();
+
+                if (!sesionId || !asientosPorSesion[sesionId]) {
+                    planoAsientos.innerHTML =
+                        '<div class="seat-empty-state" role="status">Selecciona una sesión para ver el plano de asientos.</div>';
+                    return;
+                }
+
+                const datosSesion = asientosPorSesion[sesionId];
+                const asientos = datosSesion.asientos;
+                const ocupados = datosSesion.ocupados;
+                const columnas = datosSesion.columnas;
+
+                const opcionSeleccionada = sesionSelect.options[sesionSelect.selectedIndex];
+                if (infoSesion && opcionSeleccionada) {
+                    infoSesion.innerHTML = `<strong>Sesión seleccionada</strong><span>${opcionSeleccionada.textContent}</span>`;
+                }
+
+                planoAsientos.innerHTML = "";
+
+                const contenedorAsientos = document.querySelector(".asientos-scroll-box");
+                const anchoDisponible = contenedorAsientos
+                    ? contenedorAsientos.clientWidth
+                    : planoAsientos.parentElement.clientWidth;
+                const separacion = window.innerWidth <= 520 ? 6 : 8;
+                const anchoCalculado = Math.floor(
+                    (anchoDisponible - separacion * (columnas - 1)) / columnas
+                );
+                const anchoAsiento = Math.max(26, Math.min(46, anchoCalculado));
+
+                planoAsientos.style.setProperty("--columnas-sala", columnas);
+                planoAsientos.style.setProperty("--ancho-asiento", `${anchoAsiento}px`);
+                planoAsientos.style.gridTemplateColumns =
+                    `repeat(${columnas}, minmax(0, var(--ancho-asiento)))`;
+
+                asientos.forEach((asiento) => {
+                    const boton = document.createElement("button");
+                    boton.type = "button";
+                    boton.textContent = asiento;
+                    boton.dataset.asiento = asiento;
+                    boton.classList.add("asiento-btn");
+                    boton.setAttribute("aria-pressed", "false");
+
+                    if (ocupados.includes(asiento)) {
+                        boton.classList.add("asiento-ocupado");
+                        boton.disabled = true;
+                    }
+
+                    planoAsientos.appendChild(boton);
+                });
+            }
+
+            function obtenerBotonAsiento(elemento) {
+                if (!elemento) {
+                    return null;
+                }
+                return elemento.closest(".asiento-btn:not(.asiento-ocupado)");
+            }
+
+            function obtenerBotonAsientoDesdePunto(x, y) {
+                return obtenerBotonAsiento(document.elementFromPoint(x, y));
+            }
+
+            function pintarEstadoAsiento(boton, seleccionar) {
+                if (!boton || boton.disabled) {
+                    return;
+                }
+
+                const asiento = boton.dataset.asiento;
+                if (!asiento) {
+                    return;
+                }
+
+                if (seleccionar) {
+                    asientosSeleccionados.add(asiento);
+                    boton.classList.add("asiento-seleccionado-btn");
+                    boton.setAttribute("aria-pressed", "true");
+                } else {
+                    asientosSeleccionados.delete(asiento);
+                    boton.classList.remove("asiento-seleccionado-btn");
+                    boton.setAttribute("aria-pressed", "false");
+                }
+
+                actualizarResumenAsientos();
+            }
+
+            function aplicarAsientoDuranteArrastre(boton) {
+                if (!boton || boton.disabled) {
+                    return;
+                }
+
+                const asiento = boton.dataset.asiento;
+                if (!asiento || asientosProcesadosArrastre.has(asiento)) {
+                    return;
+                }
+
+                asientosProcesadosArrastre.add(asiento);
+                pintarEstadoAsiento(boton, modoArrastreSeleccion);
+            }
+
+            function iniciarArrastre(boton, pointerId) {
+                arrastreActivo = true;
+                pointerActivo = pointerId;
+                movimientoRealizado = false;
+                asientosProcesadosArrastre = new Set();
+                modoArrastreSeleccion = !asientosSeleccionados.has(boton.dataset.asiento);
+                planoAsientos.classList.add("arrastre-asientos-activo");
+                aplicarAsientoDuranteArrastre(boton);
+            }
+
+            function finalizarArrastre() {
+                if (!arrastreActivo) {
+                    return;
+                }
+
+                arrastreActivo = false;
+                pointerActivo = null;
+                movimientoRealizado = false;
+                planoAsientos.classList.remove("arrastre-asientos-activo");
+
+                window.setTimeout(() => {
+                    asientosProcesadosArrastre.clear();
+                }, 0);
+            }
+
+            planoAsientos.addEventListener("pointerdown", function (event) {
+                const boton = obtenerBotonAsiento(event.target);
+
+                if (!boton || boton.disabled) {
+                    return;
+                }
+
+                if (event.pointerType === "mouse" && event.button !== 0) {
+                    return;
+                }
+
+                event.preventDefault();
+                iniciarArrastre(boton, event.pointerId);
+
+                if (planoAsientos.setPointerCapture) {
+                    try {
+                        planoAsientos.setPointerCapture(event.pointerId);
+                    } catch (error) {
+                    }
+                }
+            }, { passive: false });
+
+            planoAsientos.addEventListener("pointermove", function (event) {
+                if (!arrastreActivo || event.pointerId !== pointerActivo) {
+                    return;
+                }
+
+                const boton = obtenerBotonAsientoDesdePunto(event.clientX, event.clientY);
+
+                if (boton) {
+                    movimientoRealizado = true;
+                    event.preventDefault();
+                    aplicarAsientoDuranteArrastre(boton);
+                }
+            }, { passive: false });
+
+            planoAsientos.addEventListener("pointerup", function (event) {
+                if (arrastreActivo && event.pointerId === pointerActivo) {
+                    event.preventDefault();
+                    finalizarArrastre();
+                }
+            }, { passive: false });
+
+            planoAsientos.addEventListener("pointercancel", finalizarArrastre);
+            planoAsientos.addEventListener("lostpointercapture", finalizarArrastre);
+
+            planoAsientos.addEventListener("keydown", function (event) {
+                if (event.key !== " " && event.key !== "Enter") {
+                    return;
+                }
+
+                const boton = obtenerBotonAsiento(event.target);
+                if (!boton || boton.disabled) {
+                    return;
+                }
+
+                event.preventDefault();
+                pintarEstadoAsiento(boton, !asientosSeleccionados.has(boton.dataset.asiento));
+            });
+
+            if (formCompraEntrada) {
+                formCompraEntrada.addEventListener("submit", function (event) {
+                    if (!sesionInput.value || !asientoInput.value) {
+                        event.preventDefault();
+
+                        if (errorSeleccionEntrada) {
+                            errorSeleccionEntrada.textContent =
+                                "Debes seleccionar una sesión y al menos un asiento para comprar entradas.";
+                            errorSeleccionEntrada.classList.remove("oculto");
+                            errorSeleccionEntrada.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }
+                    }
+                });
+            }
+
+            if (fechaSelect && sesionSelect) {
+                fechaSelect.addEventListener("change", cargarSesiones);
+                sesionSelect.addEventListener("change", cargarPlanoAsientos);
+
+                let resizeTimeoutFICinema = null;
+
+                window.addEventListener("resize", () => {
+                    clearTimeout(resizeTimeoutFICinema);
+
+                    resizeTimeoutFICinema = setTimeout(() => {
+                        if (sesionSelect.value) {
+                            cargarPlanoAsientos();
+                        }
+                    }, 120);
+                });
+
+                cargarSesiones();
+            }
+        </script>
+
+    {% endif %}
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v13"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".mensaje-auto-cierre").forEach(function (mensaje) {
+                setTimeout(function () {
+                    mensaje.style.transition = "opacity 0.35s ease, transform 0.35s ease";
+                    mensaje.style.opacity = "0";
+                    mensaje.style.transform = "translateY(-8px)";
+                    setTimeout(function () {
+                        mensaje.remove();
+                    }, 380);
+                }, 3500);
+            });
+        });
+    </script>
+</body>
+</html>

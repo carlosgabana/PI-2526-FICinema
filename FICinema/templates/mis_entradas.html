@@ -1,0 +1,256 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Mis entradas</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container bonos-container">
+            <h1>Mis entradas</h1>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <form method="get" class="ticket-filter-panel" aria-label="Filtrar mis entradas">
+                <div class="ticket-filter-grid">
+                    <label>
+                        <span>Buscar</span>
+                        <input type="search" name="q" value="{{ busqueda_entradas }}" placeholder="Película, sala, asiento o código" autocomplete="off" spellcheck="false" inputmode="search">
+                    </label>
+
+                    <label>
+                        <span>Estado</span>
+                        <select name="estado">
+                            <option value="todas" {% if estado_filtro == 'TODAS' %}selected{% endif %}>Todas</option>
+                            <option value="ACTIVA" {% if estado_filtro == 'ACTIVA' %}selected{% endif %}>Activas</option>
+                            <option value="USADA" {% if estado_filtro == 'USADA' %}selected{% endif %}>Usadas</option>
+                            <option value="CADUCADA" {% if estado_filtro == 'CADUCADA' %}selected{% endif %}>Caducadas</option>
+                            <option value="CANCELADA" {% if estado_filtro == 'CANCELADA' %}selected{% endif %}>Canceladas</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="ticket-filter-actions">
+                    <button type="submit" class="btn-base btn-primary">Filtrar entradas</button>
+                    <a href="{% url 'mis_entradas' %}" class="btn-base btn-secondary">Limpiar</a>
+                </div>
+
+                <p class="ticket-filter-summary" role="status">
+                    Total de entradas registradas en tu cuenta: <strong>{{ total_entradas_usuario }}</strong>.
+                    {% if busqueda_entradas or estado_filtro != 'TODAS' %}
+                        Mostrando resultados filtrados.
+                    {% endif %}
+                </p>
+            </form>
+
+            <h2 class="subtitulo-seccion">Entradas activas</h2>
+
+            {% if entradas_activas %}
+                <div class="mis-bonos">
+                    {% for entrada in entradas_activas %}
+                        <div class="bono-comprado entrada-comprada">
+                            <p><strong>Código:</strong> {{ entrada.codigo }}</p>
+                            <p><strong>Película:</strong> {{ entrada.titulo_pelicula }}</p>
+                            <p><strong>Fecha:</strong> {{ entrada.fecha }}</p>
+
+                            <p>
+                                <strong>Hora de inicio:</strong>
+                                {% if entrada.sesion %}
+                                    {{ entrada.sesion.hora_inicio_formateada }}
+                                {% else %}
+                                    {{ entrada.hora }}
+                                {% endif %}
+                            </p>
+
+                            <p>
+                                <strong>Hora aproximada de fin:</strong>
+                                {% if entrada.sesion %}
+                                    {{ entrada.sesion.hora_fin_formateada }}
+                                {% else %}
+                                    No disponible
+                                {% endif %}
+                            </p>
+
+                            <p>
+                                <strong>Duración:</strong>
+                                {% if entrada.sesion %}
+                                    {{ entrada.sesion.duracion_minutos }} minutos
+                                {% else %}
+                                    No disponible
+                                {% endif %}
+                            </p>
+
+                            <p>
+                                <strong>Sala:</strong>
+                                {% if entrada.sala %}
+                                    {{ entrada.sala.nombre }}
+                                {% else %}
+                                    No asignada
+                                {% endif %}
+                            </p>
+
+                            <p><strong>Asiento:</strong> {{ entrada.asiento }}</p>
+                            <p><strong>Estado:</strong> {{ entrada.get_estado_display }}</p>
+
+                            {% if entrada.bono_usado %}
+                                <p>
+                                    <strong>Bono usado:</strong>
+                                    Código {{ entrada.bono_usado.codigo }} - {{ entrada.bono_usado.tipo }}
+                                </p>
+                            {% endif %}
+
+                            <p><strong>Fecha de compra:</strong> {{ entrada.fechaCompra }}</p>
+
+                            {% if entrada.estado == "ACTIVA" %}
+                                <div class="ticket-qr-card" aria-label="Código QR de acceso de la entrada">
+                                    <img
+                                        class="ticket-qr-image"
+                                        src="{% url 'qr_entrada' entrada_id=entrada.id %}"
+                                        alt="Código QR de acceso para la entrada {{ entrada.codigo }}"
+                                        loading="lazy"
+                                    >
+
+                                    <div class="ticket-qr-info">
+                                        <strong>Código QR de acceso</strong>
+                                        <span>FICINEMA-{{ entrada.codigo }}-{{ entrada.usuario.id }}</span>
+                                        <small>Presenta este código en la entrada de la sala.</small>
+                                        <a href="/entrada/verificar/FICINEMA-{{ entrada.codigo }}-{{ entrada.usuario.id }}/" aria-label="Verificar entrada FICINEMA-{{ entrada.codigo }}-{{ entrada.usuario.id }}">Verificar entrada</a>
+                                        <a href="{% url 'descargar_entrada_pdf' entrada_id=entrada.id %}" class="ticket-pdf-link" data-no-loader="true" target="_blank" rel="noopener" download aria-label="Descargar PDF de la entrada {{ entrada.codigo }}">Descargar PDF</a>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="ticket-qr-card ticket-qr-card-invalida" aria-label="Entrada sin QR activo">
+                                    <div class="ticket-invalid-icon" aria-hidden="true">!</div>
+
+                                    <div class="ticket-qr-info">
+                                        <strong>Entrada no válida para acceso</strong>
+                                        <span>FICINEMA-{{ entrada.codigo }}-{{ entrada.usuario.id }}</span>
+                                        <small>Esta entrada no tiene QR activo porque no está en estado activa.</small>
+                                        <a href="{% url 'descargar_entrada_pdf' entrada_id=entrada.id %}" class="ticket-pdf-link" data-no-loader="true" target="_blank" rel="noopener" download aria-label="Descargar PDF de la entrada {{ entrada.codigo }}">Descargar PDF</a>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if entrada.puede_cancelarse %}
+                                <form method="post"
+                                      action="{% url 'cancelar_entrada' entrada_id=entrada.id %}"
+                                      class="socio-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-base btn-danger" aria-label="Cancelar entrada {{ entrada.codigo }}">
+                                        Cancelar entrada
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mensaje info" role="status">
+                    No tienes entradas activas. Las entradas de sesiones finalizadas pasan al historial.
+                </p>
+            {% endif %}
+
+            <h2 class="subtitulo-seccion">Historial de entradas</h2>
+
+            {% if entradas_historial %}
+                <div class="mis-bonos">
+                    {% for entrada in entradas_historial %}
+                        <div class="bono-comprado entrada-comprada">
+                            <p><strong>Código:</strong> {{ entrada.codigo }}</p>
+                            <p><strong>Película:</strong> {{ entrada.titulo_pelicula }}</p>
+                            <p><strong>Fecha:</strong> {{ entrada.fecha }}</p>
+                            <p><strong>Hora:</strong> {{ entrada.hora }}</p>
+
+                            <p>
+                                <strong>Sala:</strong>
+                                {% if entrada.sala %}
+                                    {{ entrada.sala.nombre }}
+                                {% else %}
+                                    No asignada
+                                {% endif %}
+                            </p>
+
+                            <p><strong>Asiento:</strong> {{ entrada.asiento }}</p>
+                            <p><strong>Estado:</strong> {{ entrada.get_estado_display }}</p>
+
+                            {% if entrada.bono_usado %}
+                                <p>
+                                    <strong>Bono usado:</strong>
+                                    Código {{ entrada.bono_usado.codigo }} - {{ entrada.bono_usado.tipo }}
+                                </p>
+                            {% endif %}
+
+                            <p><strong>Fecha de compra:</strong> {{ entrada.fechaCompra }}</p>
+
+                            <div class="ticket-qr-card ticket-qr-card-historial ticket-qr-card-invalida" aria-label="Entrada histórica sin QR activo">
+                                <div class="ticket-invalid-icon" aria-hidden="true">!</div>
+
+                                <div class="ticket-qr-info">
+                                    <strong>Entrada histórica</strong>
+                                    <span>FICINEMA-{{ entrada.codigo }}-{{ entrada.usuario.id }}</span>
+                                    <small>No tiene QR de acceso activo. Se conserva como justificante.</small>
+                                    <a href="{% url 'descargar_entrada_pdf' entrada_id=entrada.id %}" class="ticket-pdf-link" data-no-loader="true" target="_blank" rel="noopener" download aria-label="Descargar PDF de la entrada {{ entrada.codigo }}">Descargar PDF</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mensaje info" role="status">
+                    Aún no tienes entradas en el historial.
+                </p>
+            {% endif %}
+
+            <div class="perfil-actions">
+                <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">
+                    Comprar entradas
+                </a>
+
+                <a href="{% url 'perfil' %}" class="btn-base btn-secondary">
+                    Volver al perfil
+                </a>
+            </div>
+        </section>
+    </main>
+
+   <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

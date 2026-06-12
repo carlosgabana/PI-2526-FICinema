@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Socio</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container">
+            {% if user.is_staff %}
+                <h1>Cuenta staff</h1>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="perfil-datos">
+                    <p>Has iniciado sesión como usuario staff de FICinema.</p>
+                    <p>Las funciones de socio están orientadas a usuarios normales. Puedes consultar los datos internos desde el panel interno.</p>
+                </div>
+
+                <div class="perfil-actions">
+                    <a href="{% url 'perfil' %}" class="btn-base btn-primary">
+                        Volver al perfil
+                    </a>
+
+                    <a href="{% url 'estadisticas' %}" class="btn-base btn-secondary">
+                        Ir al panel interno
+                    </a>
+                </div>
+            {% else %}
+                {% if request.user.socio %}
+                    <h1>Gestionar socio</h1>
+                {% else %}
+                    <h1>Hacerse socio</h1>
+                {% endif %}
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+
+                {% if request.user.socio %}
+                    <div class="perfil-datos">
+                        <p>Ya eres socio de FICinema.</p>
+                        <p>Como socio puedes acceder a ventajas especiales, comprar bonos y consultar promociones futuras.</p>
+                        <p>Si te das de baja, conservarás los bonos que ya hayas comprado, pero no podrás comprar bonos nuevos hasta volver a hacerte socio.</p>
+                    </div>
+
+                    <div class="perfil-actions">
+                        <a href="{% url 'perfil' %}" class="btn-base btn-primary">Volver al perfil</a>
+                        <a href="{% url 'bonos' %}" class="btn-base btn-primary">Ver bonos</a>
+                    </div>
+
+                    <div class="danger-zone">
+                        <p class="danger-zone-text">
+                            Si confirmas la baja, tu cuenta dejará de tener ventajas de socio. Los bonos comprados se conservarán.
+                        </p>
+
+                        <form method="POST" action="{% url 'baja_socio' %}" class="danger-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-base btn-danger">
+                                Darme de baja como socio
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="perfil-datos">
+                        <p>Hazte socio de FICinema para acceder a ventajas especiales dentro de la aplicación.</p>
+                        <p>Como socio podrás comprar bonos y acceder a futuras promociones del cine.</p>
+                        <p>Esta acción actualizará tu perfil y marcará tu cuenta como socio.</p>
+                    </div>
+
+                    <form method="POST" class="auth-form socio-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-base btn-primary">
+                            Confirmar alta como socio
+                        </button>
+                    </form>
+
+                    <div class="perfil-actions">
+                        <a href="{% url 'perfil' %}" class="btn-base btn-secondary">Volver al perfil</a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

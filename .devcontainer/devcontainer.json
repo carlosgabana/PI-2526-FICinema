@@ -1,0 +1,8 @@
+{
+  "name": "FICinema",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "web",
+  "workspaceFolder": "/app",
+  "forwardPorts": [8000],
+  "postCreateCommand": "python manage.py migrate"
+}

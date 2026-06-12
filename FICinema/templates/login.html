@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Iniciar sesión</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container">
+            <h1>Iniciar sesión</h1>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn-trailer">Iniciar sesión</button>
+            </form>
+
+            <p class="auth-link">
+                ¿No tienes cuenta?
+                <a href="{% url 'registro' %}">Regístrate</a>
+            </p>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Panel interno</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container estadisticas-container staff-dashboard">
+
+            <div class="staff-page-header">
+                <div>
+                    <h1>Panel interno</h1>
+                    <div class="perfil-datos">
+                        <p>Centro de control para revisar sesiones, entradas, usuarios, bonos y ocupación de salas.</p>
+                    </div>
+                </div>
+
+                <span class="staff-page-kicker">Modo staff · {{ user.username }}</span>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <div class="staff-actions-grid">
+                <a href="{% url 'panel_sesiones' %}" class="staff-action-card">
+                    <span class="staff-action-title">Gestión de sesiones</span>
+                    <span class="staff-action-text">Consulta sesiones de hoy, próximas y pasadas con ocupación por sala.</span>
+                </a>
+
+                <a href="{% url 'panel_entradas' %}" class="staff-action-card">
+                    <span class="staff-action-title">Entradas vendidas</span>
+                    <span class="staff-action-text">Revisa entradas activas, canceladas y caducadas. Cancela entradas activas.</span>
+                </a>
+
+                <a href="{% url 'escanear_qr_staff' %}" class="staff-action-card staff-action-card-primary">
+                    <span class="staff-action-title">Escaneo QR</span>
+                    <span class="staff-action-text">Abre la cámara del móvil o del portátil y valida entradas marcándolas como usadas.</span>
+                </a>
+
+                <a href="{% url 'panel_usuarios' %}" class="staff-action-card">
+                    <span class="staff-action-title">Usuarios</span>
+                    <span class="staff-action-text">Consulta clientes, socios, cuentas staff y actividad de cada usuario.</span>
+                </a>
+
+                <a href="{% url 'panel_bonos' %}" class="staff-action-card">
+                    <span class="staff-action-title">Bonos</span>
+                    <span class="staff-action-text">Controla bonos activos, agotados y caducados conservados en histórico.</span>
+                </a>
+
+                <a href="{% url 'panel_resenas' %}" class="staff-action-card">
+                    <span class="staff-action-title">Moderación de reseñas</span>
+                    <span class="staff-action-text">Revisa opiniones de usuarios, oculta contenido inapropiado y consulta valoración interna.</span>
+                </a>
+
+                <a href="{% url 'panel_estado_sistema' %}" class="staff-action-card">
+                    <span class="staff-action-title">Estado del sistema</span>
+                    <span class="staff-action-text">Comprueba base de datos, APIs, correo, QR público, Docker/local y Render antes de la defensa.</span>
+                </a>
+
+                <form
+                    method="post"
+                    action="{% url 'regenerar_cartelera_staff' %}"
+                    class="staff-regenerate-form"
+                    onsubmit="return confirm('¿Regenerar la cartelera y completar sesiones futuras sin borrar ventas existentes?');"
+                >
+                    {% csrf_token %}
+                    <button type="submit" class="staff-action-card staff-regenerate-card">
+                        <span class="staff-action-title">Regenerar cartelera</span>
+                        <span class="staff-action-text">
+                            Actualiza las 20 películas y completa sesiones futuras sin borrar ventas existentes.
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <h2 class="subtitulo-seccion">Preparación de defensa</h2>
+
+            <section class="staff-readiness-grid" aria-label="Comprobaciones rápidas antes de la defensa">
+                {% for check in checks_defensa %}
+                    <article class="staff-readiness-card {% if check.estado == 'OK' %}staff-readiness-ok{% elif check.estado == 'Revisar' %}staff-readiness-warning{% else %}staff-readiness-neutral{% endif %}">
+                        <div class="staff-readiness-top">
+                            <strong>{{ check.titulo }}</strong>
+                            <span>{{ check.estado }}</span>
+                        </div>
+                        <p>{{ check.descripcion }}</p>
+                    </article>
+                {% endfor %}
+            </section>
+
+            <h2 class="subtitulo-seccion">Resumen rápido</h2>
+
+            <div class="staff-quick-grid">
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">S</span>
+                        <span class="badge-status badge-success">Hoy</span>
+                    </div>
+                    <span class="staff-stat-number">{{ sesiones_hoy }}</span>
+                    <span class="staff-stat-label">Sesiones hoy</span>
+                    <span class="staff-stat-hint">Sesiones programadas para la jornada actual.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">P</span>
+                        <span class="badge-status">Futuras</span>
+                    </div>
+                    <span class="staff-stat-number">{{ proximas_sesiones }}</span>
+                    <span class="staff-stat-label">Próximas sesiones</span>
+                    <span class="staff-stat-hint">Sesiones todavía disponibles en calendario.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">E</span>
+                        <span class="badge-status badge-success">Ventas</span>
+                    </div>
+                    <span class="staff-stat-number">{{ entradas_hoy }}</span>
+                    <span class="staff-stat-label">Entradas vendidas hoy</span>
+                    <span class="staff-stat-hint">Compras registradas durante el día.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">A</span>
+                        <span class="badge-status badge-success">Activas</span>
+                    </div>
+                    <span class="staff-stat-number">{{ entradas_activas }}</span>
+                    <span class="staff-stat-label">Entradas activas</span>
+                    <span class="staff-stat-hint">Entradas válidas para sesiones futuras.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">A</span>
+                        <span class="badge-status">Accesos</span>
+                    </div>
+                    <span class="staff-stat-number">{{ entradas_usadas }}</span>
+                    <span class="staff-stat-label">Entradas usadas</span>
+                    <span class="staff-stat-hint">Entradas ya validadas mediante QR.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">Q</span>
+                        <span class="badge-status badge-success">QR</span>
+                    </div>
+                    <span class="staff-stat-number">{{ validaciones_qr.hoy }}</span>
+                    <span class="staff-stat-label">Validaciones hoy</span>
+                    <span class="staff-stat-hint">Intentos registrados en el control de acceso durante la jornada.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">U</span>
+                        <span class="badge-status">Usuarios</span>
+                    </div>
+                    <span class="staff-stat-number">{{ usuarios_totales }}</span>
+                    <span class="staff-stat-label">Usuarios registrados</span>
+                    <span class="staff-stat-hint">Total de cuentas existentes.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">★</span>
+                        <span class="badge-status badge-success">Socios</span>
+                    </div>
+                    <span class="staff-stat-number">{{ usuarios_socios }}</span>
+                    <span class="staff-stat-label">Socios</span>
+                    <span class="staff-stat-hint">Usuarios con alta de socio activa.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">B</span>
+                        <span class="badge-status badge-success">Activos</span>
+                    </div>
+                    <span class="staff-stat-number">{{ bonos_activos }}</span>
+                    <span class="staff-stat-label">Bonos activos</span>
+                    <span class="staff-stat-hint">Bonos con usos disponibles y sin caducar.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">!</span>
+                        <span class="badge-status badge-warning">Agotados</span>
+                    </div>
+                    <span class="staff-stat-number">{{ bonos_agotados }}</span>
+                    <span class="staff-stat-label">Bonos agotados</span>
+                    <span class="staff-stat-hint">Bonos ocultos al cliente, conservados internamente.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">R</span>
+                        <span class="badge-status">Reseñas</span>
+                    </div>
+                    <span class="staff-stat-number">{{ resenas_totales }}</span>
+                    <span class="staff-stat-label">Reseñas visibles</span>
+                    <span class="staff-stat-hint">Opiniones publicadas por usuarios.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">V</span>
+                        <span class="badge-status">Media</span>
+                    </div>
+                    <span class="staff-stat-number">{{ valoracion_media_interna }}/5</span>
+                    <span class="staff-stat-label">Valoración interna</span>
+                    <span class="staff-stat-hint">Media de reseñas registradas en FICinema.</span>
+                </article>
+            </div>
+
+            <h2 class="subtitulo-seccion">Control de acceso QR</h2>
+
+            <section class="qr-control-overview" aria-label="Resumen del control de acceso QR">
+                <div class="qr-control-grid">
+                    <article class="qr-control-card">
+                        <span>Total validaciones</span>
+                        <strong>{{ validaciones_qr.total }}</strong>
+                    </article>
+                    <article class="qr-control-card">
+                        <span>Últimas 24 horas</span>
+                        <strong>{{ validaciones_qr.ultimas_24h }}</strong>
+                    </article>
+                    <article class="qr-control-card">
+                        <span>Correctas</span>
+                        <strong>{{ validaciones_qr.correctas }}</strong>
+                    </article>
+                    <article class="qr-control-card">
+                        <span>Bloqueadas</span>
+                        <strong>{{ validaciones_qr.bloqueadas }}</strong>
+                    </article>
+                    <article class="qr-control-card">
+                        <span>Tasa correcta</span>
+                        <strong>{{ validaciones_qr.tasa_correctas }}%</strong>
+                    </article>
+                </div>
+
+                {% if validaciones_qr.ultimas %}
+                    <div class="tabla-estadisticas staff-table-wrap qr-control-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Código leído</th>
+                                    <th>Resultado</th>
+                                    <th>Staff</th>
+                                    <th>Fecha</th>
+                                    <th>Entrada</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for validacion in validaciones_qr.ultimas %}
+                                    <tr>
+                                        <td data-label="Código">{{ validacion.codigo }}</td>
+                                        <td data-label="Resultado">{{ validacion.resultado_display }}</td>
+                                        <td data-label="Staff">{{ validacion.staff }}</td>
+                                        <td data-label="Fecha">{{ validacion.fecha }}</td>
+                                        <td data-label="Entrada">{{ validacion.entrada_codigo }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="staff-empty-state">
+                        <strong>Aún no hay validaciones registradas.</strong>
+                        Cuando el staff escanee entradas, aparecerán aquí los últimos intentos.
+                    </div>
+                {% endif %}
+            </section>
+
+            <h2 class="subtitulo-seccion">Próximas sesiones destacadas</h2>
+
+            {% if sesiones_destacadas %}
+                <div class="tabla-estadisticas staff-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Película</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Sala</th>
+                                <th>Ocupación</th>
+                                <th>Vendidas</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for sesion in sesiones_destacadas %}
+                                <tr>
+                                    <td data-label="Película">{{ sesion.titulo_pelicula }}</td>
+                                    <td data-label="Fecha">{{ sesion.fecha }}</td>
+                                    <td data-label="Horario">{{ sesion.hora_inicio_formateada }} - {{ sesion.hora_fin_formateada }}</td>
+                                    <td data-label="Sala">{{ sesion.sala.nombre }}</td>
+
+                                    <td data-label="Ocupación">
+                                        <div class="ocupacion-cell {% if sesion.ocupacion >= 80 %}ocupacion-alta{% elif sesion.ocupacion >= 50 %}ocupacion-media{% else %}ocupacion-baja{% endif %}">
+                                            <div class="ocupacion-bar">
+                                                <span
+                                                    class="ocupacion-bar-fill"
+                                                    data-width="{{ sesion.ocupacion }}"
+                                                ></span>
+                                            </div>
+
+                                            <span class="ocupacion-text">
+                                                {{ sesion.ocupacion }}%
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <td data-label="Vendidas">{{ sesion.entradas_vendidas }}/{{ sesion.capacidad }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="staff-empty-state">
+                    <strong>No hay próximas sesiones programadas.</strong>
+                    Cuando la cartelera genere sesiones futuras, aparecerán aquí automáticamente.
+                </div>
+            {% endif %}
+
+            <div class="perfil-actions">
+                <a href="{% url 'estadisticas' %}" class="btn-base btn-secondary">Ver estadísticas TMDB</a>
+                <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">Volver a cartelera</a>
+            </div>
+
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll(".ocupacion-bar-fill").forEach(function (barra) {
+            barra.style.width = barra.dataset.width + "%";
+        });
+    </script>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

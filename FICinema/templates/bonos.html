@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Bonos</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container bonos-container">
+            <h1>Bonos FICinema</h1>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            {% if user.is_staff %}
+                <p class="mensaje info" role="status">
+                    Has iniciado sesión como usuario staff. La gestión interna está disponible desde el panel interno.
+                </p>
+
+                <div class="perfil-actions">
+                    <a href="{% url 'estadisticas' %}" class="btn-base btn-secondary">
+                        Ir al panel interno
+                    </a>
+                </div>
+            {% endif %}
+
+            <div class="perfil-datos">
+                <p>Compra bonos para disfrutar de varias sesiones de cine con ventajas especiales.</p>
+                <p>Antes de completar la compra podrás revisar y confirmar el bono seleccionado.</p>
+            </div>
+
+            {% if not request.user.socio and not user.is_staff %}
+                <p class="mensaje info" role="status">
+                    Para comprar bonos debes darte de alta como socio de FICinema.
+                </p>
+
+                <div class="perfil-actions">
+                    <a href="{% url 'socio' %}" class="btn-base btn-primary">Hacerse socio</a>
+                </div>
+            {% endif %}
+
+            <h2 class="subtitulo-seccion">Bonos disponibles</h2>
+
+            <div class="bonos-grid">
+                {% for codigo, descripcion in tipos_bono %}
+                    <article class="bono-card">
+                        <h3>{{ codigo }}</h3>
+                        <p>{{ descripcion }}</p>
+
+                        {% if request.user.socio %}
+                            <a href="{% url 'confirmar_bono' codigo %}" class="btn-base btn-primary">
+                                Ir a compra
+                            </a>
+                        {% elif user.is_staff %}
+                            <a href="{% url 'estadisticas' %}" class="btn-base btn-secondary">
+                                Panel interno
+                            </a>
+                        {% else %}
+                            <a href="{% url 'socio' %}" class="btn-base btn-secondary">
+                                Hazte socio para comprar
+                            </a>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+
+            <h2 class="subtitulo-seccion">Mis bonos activos</h2>
+
+            <p class="mensaje info" role="status">
+                Aquí solo aparecen los bonos que todavía tienen usos disponibles y no han caducado.
+                Los bonos caducados o agotados se conservan internamente para las estadísticas del staff.
+            </p>
+
+            {% if bonos_usuario %}
+                <div class="mis-bonos">
+                    {% for bono in bonos_usuario %}
+                        <article class="bono-comprado">
+                            <p><strong>Código:</strong> {{ bono.codigo }}</p>
+                            <p><strong>Tipo:</strong> {{ bono.tipo }}</p>
+                            <p><strong>Usos restantes:</strong> {{ bono.usos_restantes }}</p>
+                            <p><strong>Fecha de caducidad:</strong> {{ bono.fechaCaducidad }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mensaje-vacio">No tienes bonos activos disponibles.</p>
+            {% endif %}
+
+            <p class="auth-link">
+                <a href="{% url 'perfil' %}">Volver al perfil</a>
+            </p>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

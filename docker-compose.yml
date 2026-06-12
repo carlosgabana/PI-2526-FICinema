@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    container_name: ficinema_web
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ""
+      DB_SSL_REQUIRE: "False"
+      SQLITE_PATH: /app/data/db.sqlite3
+      PUBLIC_BASE_URL: http://127.0.0.1:8000
+    volumes:
+      - ficinema_sqlite_data:/app/data
+
+volumes:
+  ficinema_sqlite_data:

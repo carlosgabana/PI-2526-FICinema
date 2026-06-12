@@ -1,0 +1,223 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Gestión de sesiones</title>
+
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+<main id="contenido-principal" class="container" tabindex="-1">
+
+    <section class="auth-container estadisticas-container staff-dashboard">
+
+        <div class="staff-page-header">
+            <div>
+                <h1>Gestión de sesiones</h1>
+
+                <p class="staff-mini-note">
+                    Revisión interna de sesiones, salas, horarios y ocupación.
+                    La compra de entradas queda reservada a usuarios cliente.
+                </p>
+            </div>
+
+            <span class="staff-page-kicker">
+                Control de programación
+            </span>
+        </div>
+
+        <div class="staff-filter-bar">
+
+            <a
+                class="btn-base btn-secondary {% if filtro == 'proximas' %}active{% endif %}"
+                href="?filtro=proximas"
+            >
+                Próximas
+            </a>
+
+            <a
+                class="btn-base btn-secondary {% if filtro == 'hoy' %}active{% endif %}"
+                href="?filtro=hoy"
+            >
+                Hoy
+            </a>
+
+            <a
+                class="btn-base btn-secondary {% if filtro == 'pasadas' %}active{% endif %}"
+                href="?filtro=pasadas"
+            >
+                Pasadas
+            </a>
+
+        </div>
+
+        <div class="staff-session-summary" aria-label="Resumen de sesiones filtradas">
+
+            <article class="staff-session-summary-card">
+                <span class="staff-session-summary-number">{{ total_sesiones }}</span>
+                <span class="staff-session-summary-label">Sesiones</span>
+            </article>
+
+            <article class="staff-session-summary-card">
+                <span class="staff-session-summary-number">{{ total_entradas_vendidas }}</span>
+                <span class="staff-session-summary-label">Entradas vendidas</span>
+            </article>
+
+            <article class="staff-session-summary-card">
+                <span class="staff-session-summary-number">{{ total_capacidad }}</span>
+                <span class="staff-session-summary-label">Capacidad total</span>
+            </article>
+
+            <article class="staff-session-summary-card">
+                <span class="staff-session-summary-number">{{ ocupacion_media }}%</span>
+                <span class="staff-session-summary-label">Ocupación media</span>
+            </article>
+
+        </div>
+
+        {% if sesiones %}
+
+            <div class="tabla-estadisticas staff-table-wrap">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Película</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Sala</th>
+                            <th>Capacidad</th>
+                            <th>Vendidas</th>
+                            <th>Ocupación</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for sesion in sesiones %}
+
+                            <tr>
+
+                                <td data-label="Película">{{ sesion.titulo_pelicula }}</td>
+
+                                <td data-label="Fecha">{{ sesion.fecha }}</td>
+
+                                <td data-label="Horario">
+                                    {{ sesion.hora_inicio_formateada }}
+                                    -
+                                    {{ sesion.hora_fin_formateada }}
+                                </td>
+
+                                <td data-label="Sala">{{ sesion.sala.nombre }}</td>
+
+                                <td data-label="Capacidad">{{ sesion.capacidad }}</td>
+
+                                <td data-label="Vendidas">{{ sesion.entradas_vendidas }}</td>
+
+                                <td data-label="Ocupación">
+
+                                    <div class="ocupacion-cell {% if sesion.ocupacion >= 80 %}ocupacion-alta{% elif sesion.ocupacion >= 50 %}ocupacion-media{% else %}ocupacion-baja{% endif %}">
+
+                                        <div class="ocupacion-bar">
+                                            <span
+                                                class="ocupacion-bar-fill"
+                                                data-width="{{ sesion.ocupacion }}"
+                                            ></span>
+                                        </div>
+
+                                        <span class="ocupacion-text">
+                                            {{ sesion.ocupacion }}%
+                                        </span>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="staff-empty-state">
+
+                <strong>No hay sesiones para este filtro.</strong>
+
+                Cambia el filtro o vuelve a la cartelera para generar sesiones futuras.
+
+            </div>
+
+        {% endif %}
+
+        <div class="perfil-actions">
+
+            <a
+                href="{% url 'panel_interno' %}"
+                class="btn-base btn-secondary"
+            >
+                Volver al panel
+            </a>
+
+            <a
+                href="{% url 'index_peliculas' %}"
+                class="btn-base btn-primary"
+            >
+                Volver a cartelera
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+
+    document.querySelectorAll(".ocupacion-bar-fill").forEach(function (barra) {
+        barra.style.width = barra.dataset.width + "%";
+    });
+
+</script>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

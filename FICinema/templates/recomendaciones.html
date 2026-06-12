@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Recomendaciones</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container recommendations-page-container recommendations-netflix-page">
+            <div class="staff-page-header recommendations-page-header">
+                <div>
+                    <span class="badge-status">Recomendaciones</span>
+                    <h1>Recomendadas para ti</h1>
+                    <p>
+                        Selección personalizada con tus favoritos, tus entradas, la cartelera actual y recomendaciones externas.
+                        Si una película no tiene sesiones, puedes guardarla para mejorar futuras propuestas.
+                    </p>
+                </div>
+
+                <div class="favorite-header-actions">
+                    <a href="{% url 'mis_favoritos' %}" class="btn-base btn-secondary">Mis favoritos</a>
+                    <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">Volver a cartelera</a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <section class="recommendation-filter-panel recommendation-filter-panel-polished" aria-labelledby="titulo-filtros-recomendaciones">
+                <div>
+                    <span class="badge-status">Afinidad personal</span>
+                    <h2 id="titulo-filtros-recomendaciones">Recomendaciones por género</h2>
+                    <p>
+                        Elige un género y FICinema combina cartelera, favoritos y resultados de TMDB para mostrar opciones disponibles y fichas informativas, estilo catálogo.
+                    </p>
+                </div>
+
+                {% if generos_interes %}
+                    <div class="genre-chip-list genre-chip-list-polished" aria-label="Géneros detectados para este usuario">
+                        {% for genero in generos_interes %}
+                            <a href="?genero={{ genero.id }}"
+                               class="genre-chip genre-chip-user genre-chip-link {% if genero_filtro == genero.id %}genre-chip-active{% endif %}"
+                               aria-label="Filtrar recomendaciones por {{ genero.nombre }}">
+                                {{ genero.nombre }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="recommendation-filter-hint">
+                        Guarda películas o compra entradas para que estos chips se adapten todavía más a tus gustos.
+                    </p>
+                {% endif %}
+
+                <div class="genre-filter-block" aria-label="Filtros rápidos por género">
+                    <div class="genre-filter-heading">
+                        <span>Filtrar por género</span>
+                        {% if genero_filtro %}
+                            <a href="{% url 'mis_recomendaciones' %}" class="genre-clear-link">Quitar filtro</a>
+                        {% endif %}
+                    </div>
+
+                    <div class="genre-chip-scroll" role="list">
+                        <a href="{% url 'mis_recomendaciones' %}"
+                           role="listitem"
+                           class="genre-chip genre-chip-link genre-choice {% if not genero_filtro %}genre-chip-active{% endif %}">
+                            Todos
+                        </a>
+                        {% for genero in generos_disponibles %}
+                            <a href="?genero={{ genero.id }}"
+                               role="listitem"
+                               class="genre-chip genre-chip-link genre-choice {% if genero_filtro == genero.id %}genre-chip-active{% endif %}"
+                               aria-label="Ver recomendaciones de {{ genero.nombre }}">
+                                {{ genero.nombre }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            {% if recomendaciones_usuario %}
+                {% if recomendaciones_con_sesiones %}
+                    <section class="recommendations-section recommendations-standalone recommendation-row-section" aria-labelledby="titulo-disponibles-ahora">
+                        <div class="recommendations-header">
+                            <div>
+                                <span class="badge-status">Disponible ahora</span>
+                                <h2 id="titulo-disponibles-ahora">Puedes verla en FICinema</h2>
+                                <p>
+                                    Películas recomendadas con sesiones reales. Aquí sí aparece la compra de entradas.
+                                    {% if genero_filtro %}Filtro activo: {{ nombre_genero_filtro }}.{% endif %}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="recommendations-grid recommendations-grid-standalone">
+                            {% for recomendacion in recomendaciones_con_sesiones %}
+                                {% include "includes/recommendation_card.html" with recomendacion=recomendacion %}
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if recomendaciones_sin_sesiones %}
+                    <section class="recommendations-section recommendations-standalone recommendation-row-section" aria-labelledby="titulo-descubrir">
+                        <div class="recommendations-header">
+                            <div>
+                                <span class="badge-status">Para descubrir</span>
+                                <h2 id="titulo-descubrir">También te puede interesar</h2>
+                                <p>
+                                    Fichas informativas relacionadas con tus gustos. Puedes guardarlas para que tus recomendaciones sean más precisas.
+                                    {% if genero_filtro %}Mostrando propuestas de {{ nombre_genero_filtro }}.{% endif %}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="recommendations-grid recommendations-grid-standalone">
+                            {% for recomendacion in recomendaciones_sin_sesiones %}
+                                {% include "includes/recommendation_card.html" with recomendacion=recomendacion %}
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endif %}
+            {% else %}
+                <section class="empty-state-box recommendation-empty-polished">
+                    <h2>{% if genero_filtro %}No hay recomendaciones para ese género{% else %}Todavía no hay recomendaciones{% endif %}</h2>
+                    <p>
+                        {% if genero_filtro %}
+                            No encontramos resultados de {{ nombre_genero_filtro|default:"ese género" }}. Prueba con otro género, quita el filtro o guarda más películas para mejorar la afinidad.
+                        {% else %}
+                            Añade películas a favoritos o compra alguna entrada para que FICinema prepare una selección personalizada.
+                        {% endif %}
+                    </p>
+                    <a href="{% if genero_filtro %}{% url 'mis_recomendaciones' %}{% else %}{% url 'index_peliculas' %}{% endif %}" class="btn-base btn-primary">
+                        {% if genero_filtro %}Ver todas las recomendaciones{% else %}Explorar cartelera{% endif %}
+                    </a>
+                </section>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-items">
+                <div class="footer-item"><span>Ubicación: Facultad de Informática, Campus Elviña, A Coruña</span></div>
+                <div class="footer-item"><span>Teléfono: +34 123 456 789</span></div>
+            </div>
+            <div class="footer-actions">
+                <a href="{% url 'ubicacion_cine' %}" class="btn-base btn-secondary">Ver detalles del cine</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v15"></script>
+</body>
+</html>

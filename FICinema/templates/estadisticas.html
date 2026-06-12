@@ -1,0 +1,685 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% if mostrar_panel_interno %}
+            FICinema - Panel interno
+        {% else %}
+            FICinema - Tendencias
+        {% endif %}
+    </title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container estadisticas-container">
+            {% if mostrar_panel_interno %}
+                <h1>Estadísticas de FICinema</h1>
+                <div class="perfil-datos">
+                    <p>
+                        Consulta las tendencias de cartelera y las métricas internas de FICinema.
+                        La información interna solo está disponible para usuarios staff.
+                    </p>
+                </div>
+            {% else %}
+                <h1>Tendencias de cartelera</h1>
+                <div class="perfil-datos">
+                    <p>
+                        Consulta un resumen de las películas disponibles en cartelera,
+                        sus valoraciones y la distribución por año de estreno.
+                        Estos datos se procesan con Pandas a partir de la información obtenida desde TMDB.
+                    </p>
+                </div>
+            {% endif %}
+
+            {% if error_api %}
+                <p class="mensaje error" role="alert">{{ error_api }}</p>
+            {% endif %}
+
+            <h2 class="subtitulo-seccion">Películas y cartelera</h2>
+
+            <p class="texto-ayuda-estadisticas">
+                Se separan las películas analizadas desde la API, las películas visibles en la cartelera pública
+                y las películas que conservan sesiones futuras en la base de datos. La cartelera pública se limita
+                a 20 títulos, aunque pueda haber más programación futura guardada.
+            </p>
+
+            <div class="estadisticas-grid">
+                <article class="estadistica-card">
+                    <span class="estadistica-numero">{{ estadisticas_peliculas.total_peliculas }}</span>
+                    <span class="estadistica-label">Películas analizadas por API</span>
+                </article>
+
+                <article class="estadistica-card">
+                    <span class="estadistica-numero">{{ estadisticas_peliculas.peliculas_cartelera_visible }}</span>
+                    <span class="estadistica-label">Películas mostradas en cartelera</span>
+                </article>
+
+                <article class="estadistica-card">
+                    <span class="estadistica-numero">{{ estadisticas_peliculas.peliculas_con_sesiones_futuras }}</span>
+                    <span class="estadistica-label">Películas con sesiones futuras en base de datos</span>
+                </article>
+
+                <article class="estadistica-card">
+                    <span class="estadistica-numero">{{ estadisticas_peliculas.valoracion_media }}</span>
+                    <span class="estadistica-label">Valoración media API</span>
+                </article>
+
+                <article class="estadistica-card">
+                    <span class="estadistica-numero">{{ estadisticas_peliculas.con_sinopsis }}</span>
+                    <span class="estadistica-label">Con sinopsis en API</span>
+                </article>
+
+                <article class="estadistica-card">
+                    <span class="estadistica-numero">{{ estadisticas_peliculas.sin_sinopsis }}</span>
+                    <span class="estadistica-label">Sin sinopsis en API</span>
+                </article>
+            </div>
+
+            <div class="estadisticas-detalle">
+                <p><strong>Película mejor valorada:</strong> {{ estadisticas_peliculas.mejor_valorada }}</p>
+                <p><strong>Película peor valorada:</strong> {{ estadisticas_peliculas.peor_valorada }}</p>
+            </div>
+
+            <h2 class="subtitulo-seccion">Películas por año de estreno</h2>
+
+            {% if estadisticas_peliculas.peliculas_por_anio %}
+                <div class="tabla-estadisticas">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Año</th>
+                                <th>Número de películas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in estadisticas_peliculas.peliculas_por_anio %}
+                                <tr>
+                                    <td data-label="Año">{{ item.anio }}</td>
+                                    <td data-label="Número de películas">{{ item.cantidad }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="mensaje-vacio">No hay datos de años disponibles.</p>
+            {% endif %}
+
+            {% if mostrar_panel_interno %}
+                <div class="panel-interno">
+                    <h2 class="subtitulo-seccion">Métricas internas</h2>
+
+                    <p class="mensaje info" role="status">
+                        Esta información solo está disponible para usuarios administradores o staff.
+                    </p>
+
+                    <h3 class="subtitulo-interno">Usuarios y socios</h3>
+
+                    <div class="estadisticas-grid">
+                        <article class="estadistica-card">
+                            <span class="estadistica-numero">{{ estadisticas_usuarios.total_usuarios }}</span>
+                            <span class="estadistica-label">Usuarios registrados</span>
+                        </article>
+
+                        <article class="estadistica-card">
+                            <span class="estadistica-numero">{{ estadisticas_usuarios.usuarios_socios }}</span>
+                            <span class="estadistica-label">Usuarios socios</span>
+                        </article>
+
+                        <article class="estadistica-card">
+                            <span class="estadistica-numero">{{ estadisticas_usuarios.usuarios_no_socios }}</span>
+                            <span class="estadistica-label">Usuarios no socios</span>
+                        </article>
+                    </div>
+
+                    <h3 class="subtitulo-interno">Bonos vendidos</h3>
+
+                    <div class="estadisticas-grid">
+                        <article class="estadistica-card">
+                            <span class="estadistica-numero">{{ estadisticas_bonos.total_bonos }}</span>
+                            <span class="estadistica-label">Bonos totales</span>
+                        </article>
+                    </div>
+
+                    <div class="tabla-estadisticas">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tipo de bono</th>
+                                    <th>Descripción</th>
+                                    <th>Vendidos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bono in estadisticas_bonos.bonos_por_tipo %}
+                                    <tr>
+                                        <td data-label="Tipo de bono">{{ bono.codigo }}</td>
+                                        <td data-label="Descripción">{{ bono.descripcion }}</td>
+                                        <td data-label="Vendidos">{{ bono.cantidad }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                    {% if estadisticas_resenas %}
+                        <h3 class="subtitulo-interno">Reseñas de usuarios</h3>
+
+                        <div class="estadisticas-grid">
+                            <article class="estadistica-card">
+                                <span class="estadistica-numero">{{ estadisticas_resenas.total_resenas }}</span>
+                                <span class="estadistica-label">Reseñas visibles</span>
+                            </article>
+
+                            <article class="estadistica-card">
+                                <span class="estadistica-numero">{{ estadisticas_resenas.media_general }}/5</span>
+                                <span class="estadistica-label">Valoración media interna</span>
+                            </article>
+
+                            <article class="estadistica-card">
+                                <span class="estadistica-numero">{{ estadisticas_resenas.peliculas_resenadas }}</span>
+                                <span class="estadistica-label">Películas con reseñas</span>
+                            </article>
+                        </div>
+
+                        {% if estadisticas_resenas.top_peliculas %}
+                            <div class="tabla-estadisticas">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Película</th>
+                                            <th>Media usuarios</th>
+                                            <th>Reseñas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pelicula in estadisticas_resenas.top_peliculas %}
+                                            <tr>
+                                                <td data-label="Película">
+                                                    <a href="{% url 'detalle_pelicula' pelicula.movie_id %}">
+                                                        {{ pelicula.titulo_pelicula }}
+                                                    </a>
+                                                </td>
+                                                <td data-label="Media usuarios">{{ pelicula.media }}/5</td>
+                                                <td data-label="Reseñas">{{ pelicula.total }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="mensaje-vacio">Todavía no hay reseñas de usuarios.</p>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if estadisticas_avanzadas %}
+                        <section class="staff-advanced-stats" aria-labelledby="estadisticas-avanzadas-title">
+                            <div class="advanced-stats-header">
+                                <div>
+                                    <p class="section-kicker">Gestión interna</p>
+                                    <h2 id="estadisticas-avanzadas-title" class="subtitulo-seccion">Rendimiento interno de FICinema</h2>
+                                    <p>
+                                        Métricas calculadas a partir de entradas, sesiones, salas, bonos y usuarios registrados.
+                                        Esta sección ayuda al staff a revisar demanda, ocupación y actividad real del cine.
+                                    </p>
+                                </div>
+
+                                <div class="advanced-export-actions">
+                                    <a href="{% url 'exportar_estadisticas_csv' %}" class="btn-base btn-secondary" data-no-loader="true" download>
+                                        Exportar CSV
+                                    </a>
+                                    <a href="{% url 'exportar_estadisticas_pdf' %}" class="btn-base btn-primary" data-no-loader="true" download>
+                                        Descargar PDF
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="advanced-summary-grid">
+                                <article class="advanced-summary-card">
+                                    <span class="advanced-number">{{ estadisticas_avanzadas.resumen.entradas_vendidas }}</span>
+                                    <span class="advanced-label">Entradas vendidas</span>
+                                    <small class="advanced-card-note">Emitidas y no canceladas</small>
+                                </article>
+
+                                <article class="advanced-summary-card">
+                                    <span class="advanced-number">{{ estadisticas_avanzadas.resumen.ocupacion_global }}%</span>
+                                    <span class="advanced-label">Ocupación global</span>
+                                </article>
+
+                                <article class="advanced-summary-card">
+                                    <span class="advanced-number">{{ estadisticas_avanzadas.resumen.sesiones_programadas }}</span>
+                                    <span class="advanced-label">Sesiones programadas</span>
+                                </article>
+
+                                <article class="advanced-summary-card">
+                                    <span class="advanced-number">{{ estadisticas_avanzadas.resumen.salas_activas }}</span>
+                                    <span class="advanced-label">Salas activas</span>
+                                </article>
+
+                                <article class="advanced-summary-card">
+                                    <span class="advanced-number">{{ estadisticas_avanzadas.resumen.ingresos_estimados_totales }}€</span>
+                                    <span class="advanced-label">Total cobrado simulado</span>
+                                    <small class="advanced-card-note">Entradas directas y bonos, sin duplicar consumos de bono</small>
+                                </article>
+                            </div>
+
+                            <div class="advanced-mini-grid">
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.entradas_activas }}</strong>
+                                    <span>Entradas activas para acceso</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.entradas_usadas }}</strong>
+                                    <span>Entradas usadas</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.entradas_caducadas }}</strong>
+                                    <span>Entradas caducadas</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.entradas_canceladas }}</strong>
+                                    <span>Entradas canceladas</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.sesiones_futuras }}</strong>
+                                    <span>Sesiones futuras</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.sesiones_pasadas }}</strong>
+                                    <span>Sesiones pasadas</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.media_entradas_por_sesion }}</strong>
+                                    <span>Media de entradas por sesión</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.dia_mas_ventas.total }}</strong>
+                                    <span>Día con más ventas: {{ estadisticas_avanzadas.resumen.dia_mas_ventas.dia }}</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.porcentaje_entradas_con_bono }}%</strong>
+                                    <span>Entradas consumidas con bono</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.porcentaje_cancelacion }}%</strong>
+                                    <span>Cancelaciones sobre entradas emitidas</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.porcentaje_entradas_usadas }}%</strong>
+                                    <span>Entradas validadas por QR</span>
+                                </article>
+                                <article class="advanced-mini-card">
+                                    <strong>{{ estadisticas_avanzadas.resumen.capacidad_media_por_sesion }}</strong>
+                                    <span>Capacidad media por sesión</span>
+                                </article>
+                            </div>
+
+                            <section class="advanced-panel-card advanced-panel-wide operations-window" aria-labelledby="proximas-24h-title">
+                                <div class="advanced-section-head">
+                                    <div>
+                                        <p class="section-kicker">Operativa próxima</p>
+                                        <h3 id="proximas-24h-title">Próximas 24 horas</h3>
+                                    </div>
+                                    <span class="advanced-pill">Desde {{ estadisticas_avanzadas.proximas_24h.primera_sesion }}</span>
+                                </div>
+
+                                <div class="operations-grid">
+                                    <article>
+                                        <strong>{{ estadisticas_avanzadas.proximas_24h.sesiones }}</strong>
+                                        <span>Sesiones próximas</span>
+                                    </article>
+                                    <article>
+                                        <strong>{{ estadisticas_avanzadas.proximas_24h.entradas_activas }}</strong>
+                                        <span>Entradas activas</span>
+                                    </article>
+                                    <article>
+                                        <strong>{{ estadisticas_avanzadas.proximas_24h.plazas_disponibles }}</strong>
+                                        <span>Plazas disponibles</span>
+                                    </article>
+                                    <article>
+                                        <strong>{{ estadisticas_avanzadas.proximas_24h.ocupacion_prevista }}%</strong>
+                                        <span>Ocupación prevista</span>
+                                    </article>
+                                </div>
+                            </section>
+
+                            {% if validaciones_qr %}
+                                <section class="advanced-panel-card advanced-panel-wide qr-control-overview" aria-labelledby="control-qr-title">
+                                    <div class="advanced-section-head">
+                                        <div>
+                                            <p class="section-kicker">Control de acceso</p>
+                                            <h3 id="control-qr-title">Validaciones QR</h3>
+                                        </div>
+                                        <span class="advanced-pill">{{ validaciones_qr.tasa_correctas }}% correctas</span>
+                                    </div>
+
+                                    <div class="operations-grid qr-control-grid">
+                                        <article>
+                                            <strong>{{ validaciones_qr.total }}</strong>
+                                            <span>Validaciones totales</span>
+                                        </article>
+                                        <article>
+                                            <strong>{{ validaciones_qr.hoy }}</strong>
+                                            <span>Validaciones de hoy</span>
+                                        </article>
+                                        <article>
+                                            <strong>{{ validaciones_qr.correctas }}</strong>
+                                            <span>Accesos correctos</span>
+                                        </article>
+                                        <article>
+                                            <strong>{{ validaciones_qr.bloqueadas }}</strong>
+                                            <span>Intentos bloqueados</span>
+                                        </article>
+                                    </div>
+
+                                    {% if validaciones_qr.por_resultado %}
+                                        <div class="advanced-mini-grid qr-result-grid">
+                                            {% for resultado in validaciones_qr.por_resultado %}
+                                                <article class="advanced-mini-card">
+                                                    <strong>{{ resultado.total }}</strong>
+                                                    <span>{{ resultado.resultado_display }}</span>
+                                                </article>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if validaciones_qr.ultimas %}
+                                        <ol class="advanced-ranking-list qr-latest-list">
+                                            {% for validacion in validaciones_qr.ultimas %}
+                                                <li>
+                                                    <span>{{ validacion.codigo }} · {{ validacion.resultado_display }} · {{ validacion.staff }}</span>
+                                                    <strong>{{ validacion.fecha }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay validaciones QR registradas.</p>
+                                    {% endif %}
+                                </section>
+                            {% endif %}
+
+                            <section class="advanced-panel-card advanced-panel-wide management-alerts" aria-labelledby="alertas-gestion-title">
+                                <div class="advanced-section-head">
+                                    <div>
+                                        <p class="section-kicker">Supervisión staff</p>
+                                        <h3 id="alertas-gestion-title">Alertas de gestión</h3>
+                                    </div>
+                                    <span class="advanced-pill">{{ estadisticas_avanzadas.alertas_gestion|length }} avisos</span>
+                                </div>
+
+                                {% if estadisticas_avanzadas.alertas_gestion %}
+                                    <div class="alerts-grid">
+                                        {% for alerta in estadisticas_avanzadas.alertas_gestion %}
+                                            <article class="management-alert management-alert-{{ alerta.tipo }}">
+                                                <div class="management-alert-top">
+                                                    <span>{{ alerta.nivel }}</span>
+                                                    <strong>{{ alerta.valor }}</strong>
+                                                </div>
+                                                <h4>{{ alerta.titulo }}</h4>
+                                                <p>{{ alerta.descripcion }}</p>
+                                            </article>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="mensaje-vacio">No hay alertas de gestión relevantes en este momento.</p>
+                                {% endif %}
+                            </section>
+
+                            <div class="advanced-panels-grid">
+                                <article class="advanced-panel-card">
+                                    <h3>Películas más compradas</h3>
+                                    {% if estadisticas_avanzadas.peliculas_mas_compradas %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for pelicula in estadisticas_avanzadas.peliculas_mas_compradas %}
+                                                <li>
+                                                    <span>{{ pelicula.titulo_pelicula }}</span>
+                                                    <strong>{{ pelicula.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay entradas compradas o emitidas.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Salas más usadas</h3>
+                                    {% if estadisticas_avanzadas.salas_mas_usadas %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for sala in estadisticas_avanzadas.salas_mas_usadas %}
+                                                <li>
+                                                    <span>{{ sala.sala__nombre|default:"Sala no asignada" }}</span>
+                                                    <strong>{{ sala.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay uso registrado por sala.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Horas con más ventas</h3>
+                                    {% if estadisticas_avanzadas.horas_punta %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for hora in estadisticas_avanzadas.horas_punta %}
+                                                <li>
+                                                    <span>{{ hora.hora }}</span>
+                                                    <strong>{{ hora.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay horas punta calculables.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Usuarios con más entradas</h3>
+                                    {% if estadisticas_avanzadas.usuarios_mas_activos %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for usuario in estadisticas_avanzadas.usuarios_mas_activos %}
+                                                <li>
+                                                    <span>{{ usuario.usuario__username }} · ID {{ usuario.usuario__codigo }}</span>
+                                                    <strong>{{ usuario.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay actividad de clientes.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Bonos más usados</h3>
+                                    {% if estadisticas_avanzadas.bonos_mas_usados %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for bono in estadisticas_avanzadas.bonos_mas_usados %}
+                                                <li>
+                                                    <span>{{ bono.bono_usado__tipo }}</span>
+                                                    <strong>{{ bono.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Aún no se han usado bonos en compras.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Ventas por día</h3>
+                                    {% if estadisticas_avanzadas.ventas_por_dia %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for dia in estadisticas_avanzadas.ventas_por_dia %}
+                                                <li>
+                                                    <span>{{ dia.dia }}</span>
+                                                    <strong>{{ dia.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay ventas suficientes para mostrar evolución diaria.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Ingresos por película</h3>
+                                    {% if estadisticas_avanzadas.ingresos_por_pelicula %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for pelicula in estadisticas_avanzadas.ingresos_por_pelicula %}
+                                                <li>
+                                                    <span>{{ pelicula.titulo_pelicula }} · {{ pelicula.total_entradas }} entradas</span>
+                                                    <strong>{{ pelicula.ingresos }}€</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay ingresos simulados por película.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Sesiones con mayor ocupación</h3>
+                                    {% if estadisticas_avanzadas.sesiones_con_mayor_ocupacion %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for sesion in estadisticas_avanzadas.sesiones_con_mayor_ocupacion %}
+                                                <li>
+                                                    <span>{{ sesion.titulo_pelicula }} · {{ sesion.sala__nombre }} · {{ sesion.inicio_formateado }}</span>
+                                                    <strong>{{ sesion.ocupacion }}%</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay sesiones con entradas válidas.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Películas con mayor ocupación</h3>
+                                    {% if estadisticas_avanzadas.peliculas_con_mayor_ocupacion %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for pelicula in estadisticas_avanzadas.peliculas_con_mayor_ocupacion %}
+                                                <li>
+                                                    <span>{{ pelicula.titulo_pelicula }} · {{ pelicula.entradas }} entradas / {{ pelicula.sesiones }} sesiones</span>
+                                                    <strong>{{ pelicula.ocupacion }}%</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay ocupación calculable por película.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Desglose de ingresos</h3>
+                                    {% if estadisticas_avanzadas.desglose_ingresos %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for concepto in estadisticas_avanzadas.desglose_ingresos %}
+                                                <li>
+                                                    <span class="advanced-ranking-copy">
+                                                        <span>{{ concepto.concepto }} · {{ concepto.cantidad }}</span>
+                                                        <small>{{ concepto.detalle }}</small>
+                                                    </span>
+                                                    <strong>{{ concepto.ingresos }}€</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay ingresos simulados registrados.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card">
+                                    <h3>Entradas por estado</h3>
+                                    {% if estadisticas_avanzadas.ventas_por_estado %}
+                                        <ol class="advanced-ranking-list">
+                                            {% for estado in estadisticas_avanzadas.ventas_por_estado %}
+                                                <li>
+                                                    <span>{{ estado.estado }}</span>
+                                                    <strong>{{ estado.total }}</strong>
+                                                </li>
+                                            {% endfor %}
+                                        </ol>
+                                    {% else %}
+                                        <p class="mensaje-vacio">Todavía no hay estados de entradas que mostrar.</p>
+                                    {% endif %}
+                                </article>
+
+                                <article class="advanced-panel-card advanced-panel-wide">
+                                    <h3>Ocupación por sala</h3>
+                                    {% if estadisticas_avanzadas.ocupacion_por_sala %}
+                                        <div class="advanced-occupancy-list">
+                                            {% for sala in estadisticas_avanzadas.ocupacion_por_sala %}
+                                                <div class="occupancy-row">
+                                                    <div class="occupancy-row-head">
+                                                        <strong>{{ sala.sala }}</strong>
+                                                        <span>{{ sala.ocupacion }}%</span>
+                                                    </div>
+                                                    <div class="occupancy-bar" aria-hidden="true">
+                                                        <span style="width: {{ sala.ocupacion }}%"></span>
+                                                    </div>
+                                                    <p>{{ sala.entradas }} entradas / {{ sala.capacidad }} plazas programadas · {{ sala.sesiones }} sesiones</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="mensaje-vacio">No hay ocupación por sala disponible.</p>
+                                    {% endif %}
+                                </article>
+                            </div>
+                        </section>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="perfil-actions">
+                <a href="{% url 'perfil' %}" class="btn-base btn-secondary">
+                    Volver al perfil
+                </a>
+
+                <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">
+                    Volver a cartelera
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

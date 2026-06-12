@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Mi perfil</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container profile-staff-card">
+            <h1>Mi perfil</h1>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <div class="profile-badge-row">
+                {% if user.is_staff %}
+                    <span class="badge-status">ADMINISTRADOR</span>
+                {% elif user.socio %}
+                    <span class="badge-status badge-success">Socio</span>
+                {% else %}
+                    <span class="badge-status badge-muted">Usuario estándar</span>
+                {% endif %}
+                {% if user.is_staff %}
+                    <span class="badge-status">ID STAFF #{{ user.codigo }}</span>
+                {% else %}
+                    <span class="badge-status">ID USUARIO #{{ user.codigo }}</span>
+                {% endif %}
+            </div>
+
+            <div class="staff-detail-list">
+                <div class="staff-detail-item"><strong>Usuario</strong>{{ user.username }}</div>
+                <div class="staff-detail-item"><strong>Nombre</strong>{% if user.first_name %}{{ user.first_name }}{% else %}No indicado{% endif %}</div>
+                <div class="staff-detail-item"><strong>Apellidos</strong>{% if user.last_name %}{{ user.last_name }}{% else %}No indicados{% endif %}</div>
+                <div class="staff-detail-item"><strong>Email</strong>{% if user.email %}{{ user.email }}{% else %}No indicado{% endif %}</div>
+                <div class="staff-detail-item"><strong>Fecha de nacimiento</strong>{% if user.fechaNacimiento %}{{ user.fechaNacimiento }}{% else %}No indicada{% endif %}</div>
+                <div class="staff-detail-item"><strong>Género</strong>{{ user.get_genero_display }}</div>
+                {% if not user.is_staff %}
+                    <div class="staff-detail-item"><strong>Socio</strong>{% if user.socio %}Sí{% else %}No{% endif %}</div>
+                {% endif %}
+            </div>
+
+            <div class="perfil-actions">
+                <a href="{% url 'editar_perfil' %}" class="btn-base btn-primary">Editar perfil</a>
+                
+                {% if user.is_staff %}
+                    <a href="{% url 'panel_interno' %}" class="btn-base btn-secondary">Panel interno</a>
+                    <a href="{% url 'estadisticas' %}" class="btn-base btn-secondary">Estadísticas TMDB</a>
+                {% else %}
+                    {% if user.socio %}
+                        <a href="{% url 'bonos' %}" class="btn-base btn-primary">Ver bonos</a>
+                    {% else %}
+                        <a href="{% url 'socio' %}" class="btn-base btn-primary">Hacerse socio</a>
+                    {% endif %}
+                    <a href="{% url 'mis_favoritos' %}" class="btn-base btn-primary">Mis favoritos</a>
+                    <a href="{% url 'estadisticas' %}" class="btn-base btn-secondary">Ver tendencias</a>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer"><div class="footer-content"><div class="footer-item"><span>Ubicación: Facultad de Informática, Campus Elviña, A Coruña</span></div><div class="footer-item"><span>Teléfono: +34 123 456 789</span></div></div></footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script src="https://js.stripe.com/v3/"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Pago de entradas</title>
+    <link class="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=pago-final-5">
+</head>
+
+<body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container bonos-container pago-container">
+            <h1>Pago de entradas <span style="font-size: 1rem; color: #28a745;">(Modo Simulación)</span></h1>
+
+            {% if messages %}
+                {% for msg in messages %}
+                    <p class="mensaje {% if msg.tags %}{{ msg.tags }}{% else %}error{% endif %}" role="alert">{{ msg }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <div class="pago-grid">
+                <div>
+                    <div class="tarjeta-visual" aria-hidden="true">
+                        <div class="tarjeta-inner" id="tarjeta-3d">
+                            <div class="tarjeta-cara">
+                                <div class="tarjeta-chip"></div>
+                                <div class="tarjeta-numero" id="tv-numero">•••• •••• •••• ••••</div>
+                                <div class="tarjeta-footer">
+                                    <div>
+                                        <div class="tarjeta-label-sm">Titular</div>
+                                        <div class="tarjeta-valor-sm" id="tv-titular">NOMBRE APELLIDO</div>
+                                    </div>
+                                    <div>
+                                        <div class="tarjeta-label-sm">Caduca</div>
+                                        <div class="tarjeta-valor-sm" id="tv-expiry">MM/AA</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tarjeta-cara tarjeta-dorso">
+                                <div class="banda-magnetica"></div>
+                                <div class="cvv-dorso">
+                                    <span>CVV</span>
+                                    <div class="cvv-recuadro" id="tv-cvv">•••</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'procesar_pago' %}" id="payment-form" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="sesion_id" value="{{ sesion.id }}">
+                        <input type="hidden" name="asientos" value="{% for a in asientos %}{{ a }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                        <input type="hidden" name="cantidad_entradas" value="{{ cantidad_entradas }}">
+                        <input type="hidden" name="total" value="{{ total }}">
+                        
+                        <div class="pago-form-section">
+                            <div class="pago-form-group">
+                                <label for="titular">Nombre del titular</label>
+                                <input type="text" id="titular" name="titular" placeholder="Como aparece en la tarjeta" autocomplete="cc-name" value="{{ titular|default:'' }}" minlength="3" maxlength="60" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ .'-]{3,60}" title="Introduce solo letras, espacios, puntos, apóstrofes o guiones." required>
+                            </div>
+
+                            <div class="pago-form-group">
+                                <label style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; display: block;">
+                                    Datos de la tarjeta (Número, Vencimiento y CVV)
+                                </label>
+                                <div id="card-element" style="background: white !important; padding: 16px 18px !important; border-radius: 12px !important; border: 2px solid var(--line-color, #ccc) !important; min-height: 45px !important; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05) !important; display: block !important; visibility: visible !important; pointer-events: auto !important;"></div>
+                                <div id="card-errors" class="form-error" role="alert" style="margin-top: 8px; color: #fa755a; font-weight: 500;"></div>
+                            </div>
+                        </div>
+                        <div class="perfil-actions">
+                            <button type="submit" class="btn-base btn-primary" id="btn-pagar">Pagar {{ total }}€</button>
+                            <a href="javascript:history.back()" class="btn-base btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="pago-resumen-col">
+                    <div class="resumen-pedido">
+                        <h2>Resumen</h2>
+                        <div class="resumen-fila"><span class="resumen-label">Película</span><span class="resumen-valor">{{ sesion.titulo_pelicula }}</span></div>
+                        <div class="resumen-fila"><span class="resumen-label">Fecha</span><span class="resumen-valor">{{ sesion.fecha }}</span></div>
+                        <div class="resumen-fila"><span class="resumen-label">Sesión</span><span class="resumen-valor">{{ sesion.hora_inicio_formateada }}</span></div>
+                        <div class="resumen-fila"><span class="resumen-label">Sala</span><span class="resumen-valor">{{ sesion.sala.nombre }}</span></div>
+                        <div class="resumen-fila">
+                            <span class="resumen-label">Asientos</span>
+                            <span class="resumen-valor">
+                                {% for a in asientos %}<span class="asiento-pill">{{ a }}</span>{% endfor %}
+                            </span>
+                        </div>
+                        <div class="resumen-fila"><span class="resumen-label">Precio unitario</span><span class="resumen-valor">{{ precio_unitario }}€</span></div>
+                        <div class="resumen-fila"><span class="resumen-label">Entradas</span><span class="resumen-valor">× {{ cantidad_entradas }}</span></div>
+                        <div class="resumen-total-fila"><span>Total</span><span class="resumen-importe">{{ total }}€</span></div>
+                    </div>
+                    <p class="ayuda-bono" style="margin-top: 14px; font-size: 0.85rem;">
+                        Las entradas se emitirán digitalmente y podrás descargarlas desde <em>Mis entradas</em> tras el pago.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="footer-item"><span style="color: #ffffff;">Ubicación: Facultad de Informática, Campus Elviña, A Coruña</span></div>
+                <div class="footer-item"><span style="color: #ffffff;">Teléfono: +34 123 456 789</span></div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v11"></script>
+
+    <script>
+    (function () {
+        const modoSimulacion = "{{ PAYMENT_SIMULATION_MODE|yesno:'true,false' }}" === "true";
+        const publicKey = "{{ STRIPE_PUBLISHABLE_KEY|default:'' }}".trim();
+        const form = document.getElementById("payment-form");
+        const btnPagar = document.getElementById("btn-pagar");
+        const inTitular = document.getElementById("titular");
+        const tvTitular = document.getElementById("tv-titular");
+        const displayError = document.getElementById("card-errors");
+        const textoOriginalBoton = btnPagar.textContent;
+        let stripe = null;
+        let card = null;
+        let tarjetaValida = modoSimulacion;
+        let titularValido = false;
+
+        function crearCampoOculto(nombre, valor) {
+            let input = form.querySelector(`input[name="${nombre}"]`);
+            if (!input) {
+                input = document.createElement("input");
+                input.type = "hidden";
+                input.name = nombre;
+                form.appendChild(input);
+            }
+            input.value = valor;
+        }
+
+        function actualizarTitularVisual() {
+            const valorTitular = (inTitular.value || "").trim().replace(/\s+/g, " ").toUpperCase() || "NOMBRE APELLIDO";
+            tvTitular.textContent = valorTitular;
+            tvTitular.title = valorTitular;
+        }
+
+        function titularPagoValido(valor) {
+            const normalizado = (valor || "").trim().replace(/\s+/g, " ");
+            return /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ .'-]{1,59}$/.test(normalizado)
+                && !/\d/.test(normalizado);
+        }
+
+        function actualizarBoton() {
+            titularValido = titularPagoValido(inTitular.value);
+            const formularioValido = tarjetaValida && titularValido;
+            btnPagar.disabled = !formularioValido;
+            btnPagar.style.opacity = formularioValido ? "1" : "0.5";
+            btnPagar.style.cursor = formularioValido ? "pointer" : "not-allowed";
+
+            if (inTitular.value.trim() && !titularValido) {
+                displayError.textContent = "El titular solo puede contener letras, espacios, puntos, apóstrofes o guiones.";
+            } else if (modoSimulacion) {
+                displayError.textContent = "No se realizará ningún cargo real.";
+            } else if (tarjetaValida) {
+                displayError.textContent = "";
+            }
+        }
+
+        function prepararStripe() {
+            if (modoSimulacion) {
+                const cardElement = document.getElementById("card-element");
+                cardElement.textContent = "Modo simulación activo. Introduce un titular y confirma la compra.";
+                cardElement.style.color = "#32325d";
+                displayError.textContent = "No se realizará ningún cargo real.";
+                return;
+            }
+
+            if (!window.Stripe) {
+                displayError.textContent = "No se pudo cargar la pasarela de pago. Revisa la conexión e inténtalo de nuevo.";
+                tarjetaValida = false;
+                actualizarBoton();
+                return;
+            }
+
+            stripe = Stripe(publicKey);
+            const elements = stripe.elements();
+            card = elements.create("card", {
+                style: {
+                    base: {
+                        color: "#32325d",
+                        fontFamily: "Helvetica Neue, Helvetica, sans-serif",
+                        fontSmoothing: "antialiased",
+                        fontSize: "16px",
+                        "::placeholder": { color: "#aab7c4" }
+                    },
+                    invalid: {
+                        color: "#fa755a",
+                        iconColor: "#fa755a"
+                    }
+                }
+            });
+
+            card.mount("#card-element");
+            card.on("change", function (event) {
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                    tarjetaValida = false;
+                } else {
+                    displayError.textContent = "";
+                    tarjetaValida = event.complete;
+                }
+                actualizarBoton();
+            });
+        }
+
+        btnPagar.disabled = true;
+        btnPagar.style.opacity = "0.5";
+        btnPagar.style.cursor = "not-allowed";
+
+        function sincronizarTitular() {
+            actualizarTitularVisual();
+            actualizarBoton();
+
+            if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(actualizarTitularVisual);
+            }
+        }
+
+        ["input", "change", "keyup", "paste", "blur"].forEach(function (evento) {
+            inTitular.addEventListener(evento, function () {
+                window.setTimeout(sincronizarTitular, 0);
+            });
+        });
+
+        [0, 100, 300, 800, 1500, 3000, 5000].forEach(function (retraso) {
+            window.setTimeout(sincronizarTitular, retraso);
+        });
+
+        const intervaloAutorrelleno = window.setInterval(sincronizarTitular, 700);
+        window.setTimeout(function () {
+            window.clearInterval(intervaloAutorrelleno);
+        }, 6000);
+
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) {
+                sincronizarTitular();
+            }
+        });
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            if (!titularPagoValido(inTitular.value)) {
+                displayError.textContent = "Revisa el titular: no debe contener números ni caracteres especiales.";
+                inTitular.focus();
+                actualizarBoton();
+                return;
+            }
+
+            btnPagar.disabled = true;
+            btnPagar.style.opacity = "0.7";
+            btnPagar.textContent = "Procesando pago...";
+
+            if (modoSimulacion) {
+                crearCampoOculto("stripeToken", "simulated-token");
+                form.submit();
+                return;
+            }
+
+            stripe.createToken(card, { name: inTitular.value.trim() }).then(function (result) {
+                if (result.error) {
+                    displayError.textContent = result.error.message;
+                    btnPagar.disabled = false;
+                    btnPagar.style.opacity = "1";
+                    btnPagar.textContent = textoOriginalBoton;
+                    return;
+                }
+
+                crearCampoOculto("stripeToken", result.token.id);
+                form.submit();
+            });
+        });
+
+        prepararStripe();
+        actualizarTitularVisual();
+        actualizarBoton();
+    })();
+    </script>
+</body>
+</html>

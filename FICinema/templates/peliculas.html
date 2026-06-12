@@ -1,0 +1,342 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Cartelera</title>
+
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+
+        {% if messages %}
+            <div class="mensajes-flash" aria-live="polite" aria-atomic="true">
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="cartelera-hero" aria-labelledby="titulo-cartelera">
+            <div>
+                <span class="badge-status">Cartelera dinámica</span>
+                <h1 id="titulo-cartelera">Películas en cartelera</h1>
+                <p>
+                    Explora las películas programadas, filtra por edad orientativa, valoración y sesiones disponibles.
+                </p>
+            </div>
+        </section>
+
+        <form method="GET" action="" class="cartelera-filter-form" aria-label="Filtros de cartelera">
+            <div class="cartelera-filter-grid">
+                <div class="filter-field filter-field-wide">
+                    <label for="q">Buscar</label>
+                    <input
+                        type="search"
+                        name="q"
+                        id="q"
+                        value="{{ filtros_cartelera.q }}"
+                        placeholder="Título o sinopsis"
+                        autocomplete="off">
+                </div>
+
+                <div class="filter-field">
+                    <label for="ordenar_por">Ordenar por</label>
+                    <select name="ordenar_por" id="ordenar_por">
+                        {% for valor, etiqueta in opciones_filtros_cartelera.ordenaciones %}
+                            <option value="{{ valor }}" {% if ordenar_por == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="edad">Edad orientativa</label>
+                    <select name="edad" id="edad">
+                        <option value="">Todas</option>
+                        {% for edad in opciones_filtros_cartelera.edades %}
+                            <option value="{{ edad }}" {% if filtros_cartelera.edad == edad %}selected{% endif %}>{{ edad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="genero">Género</label>
+                    <select name="genero" id="genero">
+                        <option value="">Todos</option>
+                        {% for genero_id, genero_nombre in opciones_filtros_cartelera.generos %}
+                            <option value="{{ genero_id }}" {% if filtros_cartelera.genero == genero_id|stringformat:"s" %}selected{% endif %}>{{ genero_nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="valoracion_minima">Valoración mínima</label>
+                    <select name="valoracion_minima" id="valoracion_minima">
+                        <option value="">Cualquiera</option>
+                        {% for valor in opciones_filtros_cartelera.valoraciones_tmdb %}
+                            <option value="{{ valor }}" {% if filtros_cartelera.valoracion_minima == valor %}selected{% endif %}>{{ valor }}/10 o más</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="valoracion_usuarios_minima">Valoración usuarios</label>
+                    <select name="valoracion_usuarios_minima" id="valoracion_usuarios_minima">
+                        <option value="">Cualquiera</option>
+                        {% for valor in opciones_filtros_cartelera.valoraciones_usuarios %}
+                            <option value="{{ valor }}" {% if filtros_cartelera.valoracion_usuarios_minima == valor %}selected{% endif %}>{{ valor }}/5 o más</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <label class="filter-check">
+                    <input type="checkbox" name="solo_con_sesiones" value="1" {% if filtros_cartelera.solo_con_sesiones %}checked{% endif %}>
+                    Solo cartelera principal
+                </label>
+            </div>
+
+            <div class="cartelera-filter-actions">
+                <button type="submit" class="btn-base btn-primary">Aplicar filtros</button>
+                <a href="{% url 'index_peliculas' %}" class="btn-base btn-secondary">Limpiar</a>
+            </div>
+
+            <div class="cartelera-filter-summary" aria-live="polite">
+                <p>
+                    Mostrando <strong>{{ resumen_filtros_cartelera.total_resultados }}</strong> películas.
+                    Cartelera principal: <strong>{{ resumen_filtros_cartelera.total_principal_visible }}</strong>
+                    de <strong>{{ resumen_filtros_cartelera.total_base }}</strong>.
+                    {% if resumen_filtros_cartelera.hay_ultimas_sesiones %}
+                        Últimas sesiones comprometidas: <strong>{{ resumen_filtros_cartelera.total_ultimas_visible }}</strong>.
+                    {% endif %}
+                    {% if total_busqueda_global %}
+                        Resultados informativos fuera de cartelera: <strong>{{ total_busqueda_global }}</strong>.
+                    {% endif %}
+                </p>
+                {% if resumen_filtros_cartelera.hay_filtros %}
+                    <div class="filter-active-list" aria-label="Filtros activos">
+                        {% for filtro in resumen_filtros_cartelera.filtros_activos %}
+                            <span>{{ filtro }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </form>
+
+        <section class="peliculas" aria-label="Resultados de cartelera">
+
+            {% for pelicula in peliculas %}
+
+                <article class="pelicula-card">
+
+                    <a href="{% url 'detalle_pelicula' pelicula.id %}" class="pelicula-poster">
+
+                        {% if pelicula.poster_url %}
+
+                            <img loading="lazy" src="{{ pelicula.poster_url }}" alt="Cartel de la película {{ pelicula.title }}">
+
+                        {% else %}
+
+                            <div class="no-poster-card">
+                                Sin imagen
+                            </div>
+
+                        {% endif %}
+
+                    </a>
+
+                    <div class="pelicula-info">
+
+                        {% if user.is_authenticated and not user.is_staff %}
+                            <form method="post"
+                                  action="{% url 'alternar_favorito' %}"
+                                  class="favorite-form favorite-form-card">
+                                {% csrf_token %}
+                                <input type="hidden" name="movie_id" value="{{ pelicula.id }}">
+                                <input type="hidden" name="titulo" value="{{ pelicula.title }}">
+                                <input type="hidden" name="poster_url" value="{{ pelicula.poster_url }}">
+                                <input type="hidden" name="sinopsis" value="{{ pelicula.overview }}">
+                                <input type="hidden" name="fecha_estreno" value="{{ pelicula.release_date_iso|default:pelicula.release_date }}">
+                                <input type="hidden" name="valoracion" value="{{ pelicula.vote_average }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="hidden" name="origen" value="cartelera">
+
+                                <button type="submit"
+                                        class="favorite-button {% if pelicula.id in favoritos_ids %}is-favorite{% endif %}"
+                                        aria-label="{% if pelicula.id in favoritos_ids %}Quitar de favoritos{% else %}Añadir a favoritos{% endif %}">
+                                    {% if pelicula.id in favoritos_ids %}♥{% else %}♡{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <h2>
+                            <a href="{% url 'detalle_pelicula' pelicula.id %}">
+                                {{ pelicula.title|upper }}
+                            </a>
+                        </h2>
+
+                        <p>
+                            <strong>Fecha de estreno:</strong>
+                            {{ pelicula.release_date_display|default:"Fecha no disponible" }}
+                        </p>
+
+                        <p>
+                            <strong>Valoración TMDB:</strong>
+                            {{ pelicula.vote_average }}/10
+                        </p>
+
+                        <div class="movie-card-badges" aria-label="Información de la película">
+                            {% if pelicula.calificacion_edad %}
+                                {% if pelicula.calificacion_edad == "No disponible" or pelicula.calificacion_edad == "Sin clasificar" %}
+                                    <span class="movie-mini-badge movie-mini-badge-age-unknown" title="TMDB no ofrece una certificación de edad fiable para esta película.">
+                                        Edad sin clasificar
+                                    </span>
+                                {% else %}
+                                    <span class="movie-mini-badge">{{ pelicula.calificacion_edad }}</span>
+                                {% endif %}
+                            {% endif %}
+
+                            {% if pelicula.generos_display %}
+                                {% for genero in pelicula.generos_display|slice:":2" %}
+                                    <span class="movie-mini-badge movie-mini-badge-muted">{{ genero }}</span>
+                                {% endfor %}
+                            {% endif %}
+
+                            {% if pelicula.resumen_resenas.total %}
+                                <span class="movie-mini-badge movie-mini-badge-review">
+                                    Usuarios {{ pelicula.resumen_resenas.media }}/5 · {{ pelicula.resumen_resenas.total }} reseña{% if pelicula.resumen_resenas.total != 1 %}s{% endif %}
+                                </span>
+                            {% else %}
+                                <span class="movie-mini-badge movie-mini-badge-muted">
+                                    Sin reseñas de usuarios
+                                </span>
+                            {% endif %}
+
+                            {% if pelicula.en_ultimas_sesiones %}
+                                <span class="movie-mini-badge movie-mini-badge-last-sessions" title="Película fuera de la cartelera principal. Solo mantiene sesiones futuras que ya tienen entradas vendidas.">
+                                    Últimas sesiones
+                                </span>
+                            {% endif %}
+
+                            {% if pelicula.resultado_busqueda_global %}
+                                <span class="movie-mini-badge movie-mini-badge-muted" title="Resultado encontrado en TMDB. Se puede consultar y guardar como favorito, pero no comprar si no tiene sesiones programadas.">
+                                    Fuera de cartelera
+                                </span>
+                            {% endif %}
+
+                            <span class="movie-mini-badge movie-mini-badge-sessions">
+                                {% if pelicula.sesiones_futuras %}
+                                    {{ pelicula.sesiones_futuras }} sesión{% if pelicula.sesiones_futuras != 1 %}es{% endif %}
+                                {% else %}
+                                    Sin sesiones
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <p class="overview">
+                            {{ pelicula.overview }}
+                        </p>
+
+                        {% if pelicula.resultado_busqueda_global %}
+                            <p class="staff-mini-note">
+                                Resultado informativo: no tiene sesiones programadas en FICinema.
+                                Puedes abrir la ficha y guardarla en favoritos para mejorar tus recomendaciones.
+                            </p>
+                            <a href="{% url 'detalle_pelicula' pelicula.id %}" class="Comprar">
+                                Ver ficha
+                            </a>
+                        {% elif user.is_staff %}
+                            <a href="{% url 'detalle_pelicula' pelicula.id %}" class="Comprar">
+                                Ver sesiones
+                            </a>
+                        {% else %}
+                            <a href="{% url 'detalle_pelicula' pelicula.id %}" class="Comprar">
+                                Comprar entradas
+                            </a>
+                        {% endif %}
+
+                    </div>
+
+                </article>
+
+            {% empty %}
+
+                <div class="empty-state-box cartelera-empty-state">
+                    {% if api_error_cartelera %}
+                        <h2>No hay películas disponibles en este momento.</h2>
+                        <p>
+                            No se pudo conectar con la API de películas. Inténtalo de nuevo más tarde.
+                        </p>
+                    {% else %}
+                        <h2>No hay películas para esos filtros</h2>
+                        <p>
+                            Prueba a bajar la valoración mínima, cambiar la edad orientativa o limpiar los filtros
+                            para volver a ver toda la cartelera disponible.
+                        </p>
+                    {% endif %}
+                    <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">Ver cartelera completa</a>
+                </div>
+
+            {% endfor %}
+
+        </section>
+
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+
+            <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="footer-item">
+                    <span style="color: #ffffff;">
+                        Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                    </span>
+                </div>
+
+                <div class="footer-item">
+                    <span style="color: #ffffff;">
+                        Teléfono: +34 123 456 789
+                    </span>
+                </div>
+            </div>
+
+            <div class="footer-actions">
+                <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                    <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+                </a>
+            </div>
+
+        </div>
+    </footer>
+
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".mensaje-auto-cierre").forEach(function (mensaje) {
+                setTimeout(function () {
+                    mensaje.style.transition = "opacity 0.35s ease, transform 0.35s ease";
+                    mensaje.style.opacity = "0";
+                    mensaje.style.transform = "translateY(-8px)";
+
+                    setTimeout(function () {
+                        mensaje.remove();
+                    }, 380);
+                }, 3500);
+            });
+        });
+    </script>
+
+</body>
+</html>

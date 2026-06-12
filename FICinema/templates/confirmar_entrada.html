@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Confirmar compra</title>
+
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container bonos-container">
+
+            <h1>Confirmar compra</h1>
+
+            <div class="bono-comprado entrada-comprada">
+                <p><strong>Película:</strong> {{ titulo_pelicula }}</p>
+                <p><strong>Fecha:</strong> {{ fecha }}</p>
+                <p><strong>Hora de inicio:</strong> {{ hora }}</p>
+                <p><strong>Hora aproximada de fin:</strong> {{ hora_fin }}</p>
+                <p><strong>Duración:</strong> {{ duracion }} minutos</p>
+                <p><strong>Sala:</strong> {{ sala.nombre }}</p>
+                <p><strong>Entradas:</strong> {{ cantidad_entradas }}</p>
+                <p><strong>Asientos:</strong> {{ asientos_texto }}</p>
+            </div>
+
+            <form method="post" action="{% url 'pago_entrada' %}" id="form-confirmar">
+                {% csrf_token %}
+
+                <input type="hidden" name="sesion_id" value="{{ sesion.id }}">
+                <input type="hidden" name="asientos" value="{{ asientos_texto }}">
+                <input type="hidden" name="movie_id" value="{{ movie_id }}">
+
+                <div class="bono-aplicar-card">
+                    <div class="bono-aplicar-header">
+                        <h2>Aplicar bono</h2>
+                        <span>Opcional</span>
+                    </div>
+
+                    {% if bonos_disponibles %}
+                        <label for="codigo_bono">Selecciona uno de tus bonos activos:</label>
+
+                        <select id="codigo_bono" name="codigo_bono" class="input-bono">
+                            <option value="">Comprar sin bono</option>
+
+                            {% for bono in bonos_disponibles %}
+                                <option value="{{ bono.codigo }}">
+                                    Código {{ bono.codigo }} · {{ bono.tipo }} · {{ bono.usos_restantes }} usos restantes · caduca {{ bono.fechaCaducidad }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <p class="ayuda-bono">
+                            Al confirmar la compra se descontará 1 uso por cada entrada seleccionada.
+                        </p>
+                    {% else %}
+                        <p class="mensaje info" role="status">
+                            No tienes bonos activos disponibles para esta compra.
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="perfil-actions">
+                    <button type="submit" class="btn-base btn-primary">
+                    Confirmar compra
+                    </button>
+
+                    <a href="{% url 'detalle_pelicula' movie_id=movie_id %}"
+                    class="btn-base btn-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+            <script>
+            document.getElementById("form-confirmar").addEventListener("submit", function () {
+                const select = document.getElementById("codigo_bono");
+                if (select && select.value !== "") {
+                    this.action = "{% url 'comprar_entrada' %}";
+                }
+            });
+            </script>
+
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+<script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

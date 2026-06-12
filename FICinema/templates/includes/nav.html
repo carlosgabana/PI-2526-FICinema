@@ -1,0 +1,61 @@
+{% load static %}
+<nav class="main-nav nav-final">
+    <a href="{% url 'index_peliculas' %}" class="logo">
+        <img src="{% static 'images/FICinema.jpg' %}" alt="FICinema, volver a cartelera">
+    </a>
+
+    <button class="nav-toggle" type="button" aria-label="Abrir menú principal" aria-expanded="false" aria-controls="main-navigation">
+        ☰
+    </button>
+
+    <div class="nav-links" id="main-navigation">
+        {% if user.is_authenticated %}
+            {% if user.is_staff %}
+                <a href="{% url 'index_peliculas' %}" class="nav-link {% if request.resolver_match.url_name == 'index_peliculas' or request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'detalle_pelicula' %}nav-active{% endif %}">Cartelera</a>
+                <a href="{% url 'panel_interno' %}" class="nav-link {% if request.resolver_match.url_name == 'panel_interno' %}nav-active{% endif %}">Panel interno</a>
+
+                <details class="nav-dropdown">
+                    <summary>Staff</summary>
+                    <div class="nav-dropdown-menu">
+                        <a href="{% url 'panel_sesiones' %}" class="{% if request.resolver_match.url_name == 'panel_sesiones' %}nav-active{% endif %}">Sesiones</a>
+                        <a href="{% url 'panel_entradas' %}" class="{% if request.resolver_match.url_name == 'panel_entradas' %}nav-active{% endif %}">Entradas</a>
+                        <a href="{% url 'escanear_qr_staff' %}" class="{% if request.resolver_match.url_name == 'escanear_qr_staff' or request.resolver_match.url_name == 'verificar_entrada' %}nav-active{% endif %}">Escanear QR</a>
+                        <a href="{% url 'panel_usuarios' %}" class="{% if request.resolver_match.url_name == 'panel_usuarios' %}nav-active{% endif %}">Usuarios</a>
+                        <a href="{% url 'panel_bonos' %}" class="{% if request.resolver_match.url_name == 'panel_bonos' %}nav-active{% endif %}">Bonos</a>
+                        <a href="{% url 'panel_resenas' %}" class="{% if request.resolver_match.url_name == 'panel_resenas' %}nav-active{% endif %}">Reseñas</a>
+                        <a href="{% url 'estadisticas' %}" class="{% if request.resolver_match.url_name == 'estadisticas' %}nav-active{% endif %}">Estadísticas</a>
+                        <a href="{% url 'panel_estado_sistema' %}" class="{% if request.resolver_match.url_name == 'panel_estado_sistema' %}nav-active{% endif %}">Estado del sistema</a>
+                    </div>
+                </details>
+
+                <a href="{% url 'perfil' %}" class="nav-link {% if request.resolver_match.url_name == 'perfil' or request.resolver_match.url_name == 'editar_perfil' %}nav-active{% endif %}">
+                    Mi perfil<span class="sr-only"> {{ user.username }}</span>
+                </a>
+                <a href="{% url 'logout' %}" class="nav-logout">Cerrar sesión</a>
+            {% else %}
+                <a href="{% url 'index_peliculas' %}" class="nav-link {% if request.resolver_match.url_name == 'index_peliculas' or request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'detalle_pelicula' %}nav-active{% endif %}">Cartelera</a>
+
+                <details class="nav-dropdown">
+                    <summary>Mi zona</summary>
+                    <div class="nav-dropdown-menu">
+                        <a href="{% url 'mis_entradas' %}" class="{% if request.resolver_match.url_name == 'mis_entradas' %}nav-active{% endif %}">Mis entradas</a>
+                        <a href="{% url 'bonos' %}" class="{% if request.resolver_match.url_name == 'bonos' or request.resolver_match.url_name == 'confirmar_bono' %}nav-active{% endif %}">Bonos</a>
+                        <a href="{% url 'socio' %}" class="{% if request.resolver_match.url_name == 'socio' %}nav-active{% endif %}">Socio</a>
+                        <a href="{% url 'estadisticas' %}" class="{% if request.resolver_match.url_name == 'estadisticas' %}nav-active{% endif %}">Tendencias</a>
+                        <a href="{% url 'mis_favoritos' %}" class="{% if request.resolver_match.url_name == 'mis_favoritos' %}nav-active{% endif %}">Favoritos</a>
+                        <a href="{% url 'mis_recomendaciones' %}" class="{% if request.resolver_match.url_name == 'mis_recomendaciones' %}nav-active{% endif %}">Recomendaciones</a>
+                    </div>
+                </details>
+
+                <a href="{% url 'perfil' %}" class="nav-link {% if request.resolver_match.url_name == 'perfil' or request.resolver_match.url_name == 'editar_perfil' %}nav-active{% endif %}">
+                    Mi perfil<span class="sr-only"> {{ user.username }}</span>
+                </a>
+                <a href="{% url 'logout' %}" class="nav-logout">Cerrar sesión</a>
+            {% endif %}
+        {% else %}
+            <a href="{% url 'index_peliculas' %}" class="nav-link {% if request.resolver_match.url_name == 'index_peliculas' or request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'detalle_pelicula' %}nav-active{% endif %}">Cartelera</a>
+            <a href="{% url 'login' %}" class="nav-link {% if request.resolver_match.url_name == 'login' %}nav-active{% endif %}">Iniciar sesión</a>
+            <a href="{% url 'registro' %}" class="nav-register {% if request.resolver_match.url_name == 'registro' %}nav-active{% endif %}">Registrarse</a>
+        {% endif %}
+    </div>
+</nav>

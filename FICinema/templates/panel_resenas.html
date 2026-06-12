@@ -1,0 +1,206 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Moderación de reseñas</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container estadisticas-container staff-dashboard reviews-admin-page">
+            <div class="staff-page-header">
+                <div>
+                    <h1>Moderación de reseñas</h1>
+                    <div class="perfil-datos">
+                        <p>Consulta valoraciones internas, filtra opiniones y oculta reseñas que no deban mostrarse públicamente.</p>
+                    </div>
+                </div>
+
+                <span class="staff-page-kicker">Staff · {{ user.username }}</span>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <div class="staff-quick-grid reviews-admin-summary">
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">R</span>
+                        <span class="badge-status">Total</span>
+                    </div>
+                    <span class="staff-stat-number">{{ resumen.total }}</span>
+                    <span class="staff-stat-label">Reseñas registradas</span>
+                    <span class="staff-stat-hint">Incluye visibles y ocultas.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">V</span>
+                        <span class="badge-status badge-success">Públicas</span>
+                    </div>
+                    <span class="staff-stat-number">{{ resumen.visibles }}</span>
+                    <span class="staff-stat-label">Reseñas visibles</span>
+                    <span class="staff-stat-hint">Aparecen en la ficha de película.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">O</span>
+                        <span class="badge-status badge-warning">Ocultas</span>
+                    </div>
+                    <span class="staff-stat-number">{{ resumen.ocultas }}</span>
+                    <span class="staff-stat-label">Reseñas ocultas</span>
+                    <span class="staff-stat-hint">Conservadas para control interno.</span>
+                </article>
+
+                <article class="staff-stat-card">
+                    <div class="staff-stat-top">
+                        <span class="staff-stat-icon">M</span>
+                        <span class="badge-status">Media</span>
+                    </div>
+                    <span class="staff-stat-number">{{ resumen.media }}/5</span>
+                    <span class="staff-stat-label">Valoración interna</span>
+                    <span class="staff-stat-hint">Calculada con reseñas visibles.</span>
+                </article>
+            </div>
+
+            <form method="get" class="reviews-filter-panel" aria-label="Filtros de reseñas">
+                <div class="filter-field">
+                    <label for="estado">Estado</label>
+                    <select id="estado" name="estado">
+                        <option value="todas" {% if estado == 'todas' %}selected{% endif %}>Todas</option>
+                        <option value="visibles" {% if estado == 'visibles' %}selected{% endif %}>Visibles</option>
+                        <option value="ocultas" {% if estado == 'ocultas' %}selected{% endif %}>Ocultas</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="puntuacion">Puntuación</label>
+                    <select id="puntuacion" name="puntuacion">
+                        <option value="" {% if not puntuacion %}selected{% endif %}>Todas</option>
+                        <option value="5" {% if puntuacion == '5' %}selected{% endif %}>5</option>
+                        <option value="4" {% if puntuacion == '4' %}selected{% endif %}>4</option>
+                        <option value="3" {% if puntuacion == '3' %}selected{% endif %}>3</option>
+                        <option value="2" {% if puntuacion == '2' %}selected{% endif %}>2</option>
+                        <option value="1" {% if puntuacion == '1' %}selected{% endif %}>1</option>
+                    </select>
+                </div>
+
+                <div class="filter-field filter-field-wide">
+                    <label for="q">Buscar</label>
+                    <input id="q" type="search" name="q" value="{{ busqueda }}" placeholder="Película, usuario o texto" autocomplete="off" spellcheck="false" inputmode="search">
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn-base btn-primary">Filtrar</button>
+                    <a href="{% url 'panel_resenas' %}" class="btn-base btn-secondary">Limpiar</a>
+                </div>
+            </form>
+
+            {% if top_peliculas %}
+                <section class="reviews-top-panel" aria-labelledby="top-resenas-title">
+                    <h2 id="top-resenas-title" class="subtitulo-seccion">Películas mejor valoradas por usuarios</h2>
+                    <div class="reviews-top-grid">
+                        {% for pelicula in top_peliculas %}
+                            <article class="review-top-card">
+                                <a href="{% url 'detalle_pelicula' pelicula.movie_id %}">{{ pelicula.titulo_pelicula }}</a>
+                                <span>{{ pelicula.media }}/5 · {{ pelicula.total }} reseña{% if pelicula.total != 1 %}s{% endif %}</span>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            <h2 class="subtitulo-seccion">Listado de reseñas</h2>
+
+            {% if resenas %}
+                <section class="reviews-admin-list" aria-label="Listado de reseñas moderables">
+                    {% for resena in resenas %}
+                        <article class="reviews-admin-card {% if not resena.visible %}reviews-admin-card-hidden{% endif %}">
+                            <div class="reviews-admin-card-header">
+                                <div>
+                                    <h3>
+                                        <a href="{% url 'detalle_pelicula' resena.movie_id %}">{{ resena.titulo_pelicula }}</a>
+                                    </h3>
+                                    <p>{{ resena.usuario.username }} · {{ resena.actualizada_en|date:"d/m/Y H:i" }}</p>
+                                </div>
+                                <span class="review-score-badge">{{ resena.puntuacion }}/5</span>
+                            </div>
+
+                            <p class="reviews-admin-comment">
+                                {% if resena.comentario %}
+                                    {{ resena.comentario }}
+                                {% else %}
+                                    Sin comentario escrito.
+                                {% endif %}
+                            </p>
+
+                            <div class="reviews-admin-footer">
+                                {% if resena.visible %}
+                                    <span class="availability-badge availability-available">Visible</span>
+                                {% else %}
+                                    <span class="availability-badge availability-warning">Oculta</span>
+                                {% endif %}
+
+                                <form method="post" action="{% url 'cambiar_visibilidad_resena' resena.id %}" class="review-moderation-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    {% if resena.visible %}
+                                        <input type="hidden" name="accion" value="ocultar">
+                                        <button type="submit" class="btn-base btn-danger-soft">Ocultar reseña</button>
+                                    {% else %}
+                                        <input type="hidden" name="accion" value="mostrar">
+                                        <button type="submit" class="btn-base btn-primary">Hacer visible</button>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </section>
+            {% else %}
+                <div class="staff-empty-state">
+                    <strong>No hay reseñas con los filtros seleccionados.</strong>
+                    Prueba a cambiar el estado, la puntuación o el texto de búsqueda.
+                </div>
+            {% endif %}
+
+            <div class="perfil-actions">
+                <a href="{% url 'panel_interno' %}" class="btn-base btn-secondary">Volver al panel</a>
+                <a href="{% url 'estadisticas' %}" class="btn-base btn-primary">Ver estadísticas</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="footer-item">
+                    <span style="color: #ffffff;">Ubicación: Facultad de Informática, Campus Elviña, A Coruña</span>
+                </div>
+                <div class="footer-item">
+                    <span style="color: #ffffff;">Teléfono: +34 123 456 789</span>
+                </div>
+            </div>
+
+            <div class="footer-actions">
+                <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                    Ver detalles del cine
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

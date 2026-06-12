@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Escanear QR</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=qr-staff-final-3">
+</head>
+<body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container estadisticas-container qr-scanner-page">
+            <div class="staff-page-header">
+                <div>
+                    <p class="staff-page-kicker">Control de acceso</p>
+                    <h1>Escanear QR de entrada</h1>
+                    <div class="perfil-datos">
+                        <p>Escanea el QR de una entrada para abrir su verificación. Si el QR contiene una URL anterior, la app extrae el código FICINEMA y lo verifica desde la web actual.</p>
+                    </div>
+                </div>
+                <span class="staff-page-kicker">Staff · {{ user.username }}</span>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <div class="qr-scanner-layout">
+                <article class="qr-scanner-card">
+                    <div id="qr-reader" class="qr-reader-box"></div>
+                    <p id="qr-reader-status" class="scanner-status">Pulsa “Iniciar cámara” para comenzar.</p>
+                    <div class="perfil-actions scanner-actions">
+                        <button type="button" id="start-scanner" class="btn-base btn-primary">Iniciar cámara</button>
+                        <button type="button" id="stop-scanner" class="btn-base btn-secondary" disabled>Detener cámara</button>
+                    </div>
+                </article>
+
+                <article class="qr-scanner-card">
+                    <h2>Introducir código manualmente</h2>
+                    <p>También puedes pegar una URL completa del QR o un código como <strong>FICINEMA-22-2</strong>.</p>
+                    <form method="get" class="formulario qr-manual-form" novalidate>
+                        <div class="qr-manual-field">
+                            <label for="codigo">Código o URL del QR</label>
+                            <input type="text" id="codigo" name="codigo" placeholder="FICINEMA-22-2" autocomplete="off" spellcheck="false" inputmode="text">
+                        </div>
+                        <button type="submit" class="btn-base btn-primary qr-manual-submit">Verificar entrada</button>
+                    </form>
+                </article>
+            </div>
+
+            <div class="perfil-actions">
+                <a href="{% url 'panel_interno' %}" class="btn-base btn-secondary">Volver al panel</a>
+                <a href="{% url 'panel_entradas' %}" class="btn-base btn-secondary">Ver entradas</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="footer-item"><span style="color: #ffffff;">Ubicación: Facultad de Informática, Campus Elviña, A Coruña</span></div>
+                <div class="footer-item"><span style="color: #ffffff;">Teléfono: +34 123 456 789</span></div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/html5-qrcode" defer></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const startButton = document.getElementById("start-scanner");
+            const stopButton = document.getElementById("stop-scanner");
+            const status = document.getElementById("qr-reader-status");
+            const verifyUrlTemplate = "{% url 'verificar_entrada' 'CODIGO_QR' %}";
+            let scanner = null;
+            let running = false;
+
+            function setStatus(message, type) {
+                status.textContent = message;
+                status.dataset.type = type || "info";
+            }
+
+            function extractCode(text) {
+                const match = String(text || "").match(/FICINEMA-\d+-\d+/i);
+                return match ? match[0].toUpperCase() : null;
+            }
+
+            function goToVerification(decodedText) {
+                const code = extractCode(decodedText);
+                if (!code) {
+                    setStatus("QR leído, pero no contiene un código FICINEMA válido.", "error");
+                    return;
+                }
+
+                const target = verifyUrlTemplate.replace("CODIGO_QR", encodeURIComponent(code));
+                window.location.href = target;
+            }
+
+            async function startScanner() {
+                if (!window.Html5Qrcode) {
+                    setStatus("No se pudo cargar el lector QR. Revisa la conexión o usa el código manual.", "error");
+                    return;
+                }
+
+                if (!scanner) {
+                    scanner = new Html5Qrcode("qr-reader");
+                }
+
+                try {
+                    setStatus("Solicitando permiso de cámara...", "info");
+                    await scanner.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: function(viewfinderWidth, viewfinderHeight) { const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight, 280) * 0.82); return { width: Math.max(size, 180), height: Math.max(size, 180) }; } },
+                        function (decodedText) {
+                            if (!running) return;
+                            running = false;
+                            setStatus("QR detectado. Abriendo verificación...", "success");
+                            scanner.stop().finally(function () {
+                                goToVerification(decodedText);
+                            });
+                        }
+                    );
+                    running = true;
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                    setStatus("Cámara activa. Enfoca el QR de la entrada.", "success");
+                } catch (error) {
+                    setStatus("No se pudo abrir la cámara. Usa HTTPS y concede permisos, o introduce el código manualmente.", "error");
+                }
+            }
+
+            async function stopScanner() {
+                if (scanner && running) {
+                    await scanner.stop();
+                }
+                running = false;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+                setStatus("Cámara detenida.", "info");
+            }
+
+            startButton.addEventListener("click", startScanner);
+            stopButton.addEventListener("click", stopScanner);
+        });
+    </script>
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+</body>
+</html>

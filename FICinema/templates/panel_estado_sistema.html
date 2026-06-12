@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Estado del sistema</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+        <section class="auth-container estadisticas-container staff-dashboard system-status-page">
+            <div class="staff-page-header system-status-header">
+                <div>
+                    <p class="staff-page-kicker">Supervisión staff</p>
+                    <h1>Estado del sistema</h1>
+                    <p class="system-status-intro">
+                        Vista rápida para defensa y despliegue: base de datos, APIs, correo, QR público, entorno y modo de pago.
+                    </p>
+                </div>
+                <span class="staff-page-kicker staff-user-pill">Staff · {{ user.username }}</span>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            {% if public_base_local %}
+                <div class="system-status-warning" role="status">
+                    <strong>QR en local:</strong>
+                    <span>PUBLIC_BASE_URL usa localhost. Es correcto en este ordenador; para escanear desde móvil hay que usar la IP del equipo o Render.</span>
+                </div>
+            {% endif %}
+
+            <section class="system-status-grid" aria-label="Integraciones configuradas">
+                {% for item in integraciones %}
+                    <article class="system-status-card {% if item.ok %}system-status-card-ok{% else %}system-status-card-warning{% endif %}">
+                        <div class="system-status-card-top">
+                            <span class="system-status-icon">{{ item.nombre|slice:":1" }}</span>
+                            <span class="system-status-badge">{{ item.estado }}</span>
+                        </div>
+                        <h2>{{ item.nombre }}</h2>
+                        <p>{{ item.detalle }}</p>
+                    </article>
+                {% endfor %}
+            </section>
+
+            <section class="system-config-panel" aria-labelledby="titulo-configuracion-actual">
+                <div class="system-config-heading">
+                    <span class="badge-status">Configuración actual</span>
+                    <h2 id="titulo-configuracion-actual">Entorno de ejecución</h2>
+                    <p>Valores no sensibles que ayudan a comprobar si se está ejecutando en local, Docker o Render.</p>
+                </div>
+
+                <div class="system-config-grid">
+                    <article class="system-config-item">
+                        <span>PUBLIC_BASE_URL</span>
+                        <strong>{{ public_base_url }}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>EMAIL_PROVIDER</span>
+                        <strong>{{ email_provider }}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>EMAIL_TEST_RECIPIENT_OVERRIDE</span>
+                        <strong>{{ email_override }}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>DEFAULT_FROM_EMAIL</span>
+                        <strong>{{ default_from_email }}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>Base de datos</span>
+                        <strong>{{ database_engine }}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>Pago</span>
+                        <strong>{% if payment_simulation %}Simulado{% else %}Pasarela real{% endif %}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>Render</span>
+                        <strong>{% if render_detectado %}Detectado{% else %}No detectado{% endif %}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>Python</span>
+                        <strong>{{ python_version }}</strong>
+                    </article>
+                    <article class="system-config-item">
+                        <span>DEBUG</span>
+                        <strong>{% if debug_activo %}Activo{% else %}Desactivado{% endif %}</strong>
+                    </article>
+                </div>
+            </section>
+
+            <div class="perfil-acciones system-status-actions">
+                <a href="{% url 'healthz' %}" class="btn-base btn-primary">Probar /healthz</a>
+                <a href="{% url 'panel_interno' %}" class="btn-base btn-secondary">Volver al panel</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v15"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Ubicación</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" tabindex="-1">
+        <section id="seccion-ubicacion-cine" class="container-fluid py-5">
+            <div class="container ubicacion-shell">
+                <div class="ubicacion-header">
+                    <p class="staff-page-kicker">Ubicación</p>
+                    <h1 class="ubicacion-titulo">¿Dónde estamos?</h1>
+                    <p>Encuentra FICinema en el Campus de Elviña y abre la ruta directa en Google Maps desde tu ubicación actual.</p>
+                </div>
+
+                <div class="ubicacion-grid">
+                    <article class="ubicacion-card">
+                        <h2 class="ubicacion-card-titulo">FICinema - Campus de Elviña</h2>
+                        <p class="ubicacion-card-texto"><strong>Dirección:</strong> {{ direccion_cine }}</p>
+                        <p class="ubicacion-card-texto"><strong>Teléfono de atención:</strong> +34 123 456 789</p>
+                        <p class="ubicacion-card-texto">Pulsa “Cómo llegar” para que Maps calcule la ruta desde donde estés.</p>
+
+                        <div class="grupo-botones-ubicacion">
+                            <a href="{{ maps_directions_url }}" target="_blank" rel="noopener noreferrer" class="btn-maps-custom">Cómo llegar</a>
+                            <a href="{{ maps_place_url }}" target="_blank" rel="noopener noreferrer" class="btn-maps-secondary">Abrir ficha en Maps</a>
+                        </div>
+                    </article>
+
+                    <div class="contenedor-mapa-ubicacion">
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2901.272186981977!2d-8.412102023396783!3d43.33268847324546!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd2e7a372134e797%3A0x1d3f9b8849b736b0!2sFacultad%20de%20Inform%C3%A1tica!5e0!3m2!1ses!2ses!4v1717000000000!5m2!1ses!2ses"
+                            title="Mapa de FICinema en el Campus de Elviña"
+                            allowfullscreen
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                </div>
+
+                <div class="perfil-actions ubicacion-actions-final">
+                    <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">Volver a cartelera</a>
+                    <button type="button" onclick="window.history.back();" class="btn-base btn-secondary">Volver atrás</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v13"></script>
+</body>
+</html>

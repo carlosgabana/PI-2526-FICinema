@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICinema - Mis favoritos</title>
+    <link rel="icon" href="{% static 'images/FICinema.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    {% include "includes/nav.html" %}
+
+    <main id="contenido-principal" class="container" tabindex="-1">
+
+        <section class="auth-container favorites-container">
+            <div class="staff-page-header favorites-header">
+                <div>
+                    <span class="badge-status">Zona personal</span>
+                    <h1>Mis favoritos</h1>
+                    <p>
+                        Guarda películas de la cartelera para volver a ellas rápido,
+                        consultar sesiones y comprar entradas cuando quieras.
+                    </p>
+                </div>
+
+                <div class="favorite-header-actions">
+                    <a href="{% url 'index_peliculas' %}" class="btn-base btn-secondary">
+                        Volver a cartelera
+                    </a>
+                    <a href="{% url 'mis_recomendaciones' %}" class="btn-base btn-primary">
+                        Ver recomendaciones
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="mensaje {{ message.tags }} mensaje-auto-cierre" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            {% if favoritos %}
+                <section class="favorites-grid">
+                    {% for favorito in favoritos %}
+                        <article class="favorite-card">
+                            <a href="{% url 'detalle_pelicula' favorito.movie_id %}"
+                               class="favorite-poster">
+                                {% if favorito.poster_url %}
+                                    <img src="{{ favorito.poster_url }}"
+                                         alt="Cartel de la película {{ favorito.titulo }}"
+                                         loading="lazy">
+                                {% else %}
+                                    <div class="no-poster-card">Sin imagen</div>
+                                {% endif %}
+                            </a>
+
+                            <div class="favorite-info">
+                                <h2>
+                                    <a href="{% url 'detalle_pelicula' favorito.movie_id %}">
+                                        {{ favorito.titulo }}
+                                    </a>
+                                </h2>
+
+                                <p>
+                                    <strong>Fecha de estreno:</strong>
+                                    {% if favorito.fecha_estreno %}
+                                        {{ favorito.fecha_estreno }}
+                                    {% else %}
+                                        No disponible
+                                    {% endif %}
+                                </p>
+
+                                <p>
+                                    <strong>Valoración TMDB:</strong>
+                                    {{ favorito.valoracion }}/10
+                                </p>
+
+                                <div class="movie-card-badges favorite-review-badges">
+                                    {% if favorito.resumen_resenas.total %}
+                                        <span class="movie-mini-badge movie-mini-badge-review">
+                                            Usuarios {{ favorito.resumen_resenas.media }}/5 · {{ favorito.resumen_resenas.total }} reseña{% if favorito.resumen_resenas.total != 1 %}s{% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="movie-mini-badge movie-mini-badge-muted">
+                                            Sin reseñas de usuarios
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <p>
+                                    {% if favorito.en_cartelera_visible %}
+                                        <span class="availability-badge availability-available">
+                                            {{ favorito.texto_disponibilidad }}
+                                        </span>
+                                    {% elif favorito.tiene_sesiones %}
+                                        <span class="availability-badge availability-warning">
+                                            {{ favorito.texto_disponibilidad }}
+                                        </span>
+                                    {% else %}
+                                        <span class="availability-badge availability-unavailable">
+                                            {{ favorito.texto_disponibilidad }}
+                                        </span>
+                                    {% endif %}
+                                </p>
+
+                                <div class="favorite-actions">
+                                    <a href="{% url 'detalle_pelicula' favorito.movie_id %}"
+                                       class="btn-base {% if favorito.tiene_sesiones %}btn-primary{% else %}btn-secondary{% endif %}"
+                                       aria-label="{% if favorito.tiene_sesiones %}Ver sesiones de {{ favorito.titulo }}{% else %}Ver detalles de {{ favorito.titulo }}{% endif %}">
+                                        {% if favorito.tiene_sesiones %}
+                                            Ver sesiones
+                                        {% else %}
+                                            Ver detalles
+                                        {% endif %}
+                                    </a>
+
+                                    <form method="post"
+                                          action="{% url 'alternar_favorito' %}"
+                                          class="favorite-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="movie_id" value="{{ favorito.movie_id }}">
+                                        <input type="hidden" name="titulo" value="{{ favorito.titulo }}">
+                                        <input type="hidden" name="poster_url" value="{{ favorito.poster_url }}">
+                                        <input type="hidden" name="sinopsis" value="{{ favorito.sinopsis }}">
+                                        <input type="hidden" name="fecha_estreno" value="{{ favorito.fecha_estreno }}">
+                                        <input type="hidden" name="valoracion" value="{{ favorito.valoracion }}">
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <input type="hidden" name="origen" value="favoritos">
+                                        <button type="submit" class="btn-base btn-danger-soft" aria-label="Quitar {{ favorito.titulo }} de favoritos">
+                                            Quitar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </section>
+            {% else %}
+                <section class="empty-state-box">
+                    <h2>Aún no tienes favoritos</h2>
+                    <p>
+                        Entra en la cartelera y pulsa el corazón de una película
+                        para guardarla en tu zona personal.
+                    </p>
+                    <a href="{% url 'index_peliculas' %}" class="btn-base btn-primary">
+                        Explorar cartelera
+                    </a>
+                </section>
+            {% endif %}
+
+        </section>
+    </main>
+
+    <footer class="main-footer">
+    <div class="footer-content" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        
+        <div class="footer-items" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Ubicación: Facultad de Informática, Campus Elviña, A Coruña
+                </span>
+            </div>
+            <div class="footer-item">
+                <span style="color: #ffffff;">
+                    Teléfono: +34 123 456 789
+                </span>
+            </div>
+        </div>
+
+        <div class="footer-actions">
+            <a href="{% url 'ubicacion_cine' %}" class="btn btn-outline-light btn-sm" style="border-radius: 20px; padding: 6px 20px; font-weight: 500; text-decoration: none;">
+                <i class="fas fa-info-circle me-1"></i> Ver detalles del cine
+            </a>
+        </div>
+
+    </div>
+    </footer>
+
+    <script src="{% static 'js/nav_menu.js' %}"></script>
+    <script src="{% static 'js/ui_polish.js' %}?v=loader-v12"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".mensaje-auto-cierre").forEach(function (mensaje) {
+                setTimeout(function () {
+                    mensaje.style.transition = "opacity 0.35s ease, transform 0.35s ease";
+                    mensaje.style.opacity = "0";
+                    mensaje.style.transform = "translateY(-8px)";
+                    setTimeout(function () {
+                        mensaje.remove();
+                    }, 380);
+                }, 3500);
+            });
+        });
+    </script>
+</body>
+</html>

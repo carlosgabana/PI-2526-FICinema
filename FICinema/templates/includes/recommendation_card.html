@@ -1,0 +1,94 @@
+<article class="recommendation-card recommendation-card-polished {% if not recomendacion.tiene_sesiones %}recommendation-card-muted{% endif %}">
+    <a href="{% url 'detalle_pelicula' recomendacion.id %}" class="recommendation-poster">
+        {% if recomendacion.poster_url %}
+            <img src="{{ recomendacion.poster_url }}"
+                 alt="Cartel de la película {{ recomendacion.title }}"
+                 loading="lazy">
+        {% else %}
+            <div class="no-poster-card recommendation-no-poster">Sin imagen</div>
+        {% endif %}
+    </a>
+
+    <div class="recommendation-info">
+        <div class="recommendation-badges">
+            <span class="recommendation-reason">{{ recomendacion.motivo }}</span>
+            {% if recomendacion.genero_principal %}
+                <span class="genre-chip">{{ recomendacion.genero_principal }}</span>
+            {% endif %}
+            {% if recomendacion.coincide_genero_usuario %}
+                <span class="genre-chip genre-chip-user">{{ recomendacion.etiqueta_genero_usuario }}</span>
+            {% endif %}
+            {% if recomendacion.en_cartelera_visible %}
+                <span class="availability-badge availability-available">
+                    {{ recomendacion.texto_disponibilidad }}
+                </span>
+            {% elif recomendacion.tiene_sesiones %}
+                <span class="availability-badge availability-warning">
+                    {{ recomendacion.texto_disponibilidad }}
+                </span>
+            {% else %}
+                <span class="availability-badge availability-unavailable">
+                    {{ recomendacion.texto_disponibilidad }}
+                </span>
+            {% endif %}
+        </div>
+
+        <h3>
+            <a href="{% url 'detalle_pelicula' recomendacion.id %}">
+                {{ recomendacion.title }}
+            </a>
+        </h3>
+
+        <p class="recommendation-meta">
+            {% if recomendacion.release_date %}
+                {{ recomendacion.release_date }} ·
+            {% endif %}
+            TMDB {{ recomendacion.vote_average }}/10
+        </p>
+
+        <div class="movie-card-badges recommendation-review-badges">
+            {% if recomendacion.resumen_resenas.total %}
+                <span class="movie-mini-badge movie-mini-badge-review">
+                    Usuarios {{ recomendacion.resumen_resenas.media }}/5 · {{ recomendacion.resumen_resenas.total }} reseña{% if recomendacion.resumen_resenas.total != 1 %}s{% endif %}
+                </span>
+            {% else %}
+                <span class="movie-mini-badge movie-mini-badge-muted">
+                    Sin reseñas de usuarios
+                </span>
+            {% endif %}
+        </div>
+
+        <p class="recommendation-overview">
+            {{ recomendacion.overview }}
+        </p>
+
+        <div class="recommendation-actions">
+            <a href="{% url 'detalle_pelicula' recomendacion.id %}"
+               class="btn-base {% if recomendacion.tiene_sesiones %}btn-primary{% else %}btn-secondary{% endif %}"
+               aria-label="{% if recomendacion.tiene_sesiones %}Ver sesiones de {{ recomendacion.title }}{% else %}Ver detalles de {{ recomendacion.title }}{% endif %}">
+                {% if recomendacion.tiene_sesiones %}
+                    Ver sesiones
+                {% else %}
+                    Ver detalles
+                {% endif %}
+            </a>
+
+            <form method="post"
+                  action="{% url 'alternar_favorito' %}"
+                  class="favorite-form recommendation-favorite-form">
+                {% csrf_token %}
+                <input type="hidden" name="movie_id" value="{{ recomendacion.id }}">
+                <input type="hidden" name="titulo" value="{{ recomendacion.title }}">
+                <input type="hidden" name="poster_url" value="{{ recomendacion.poster_url }}">
+                <input type="hidden" name="sinopsis" value="{{ recomendacion.overview }}">
+                <input type="hidden" name="fecha_estreno" value="{{ recomendacion.release_date }}">
+                <input type="hidden" name="valoracion" value="{{ recomendacion.vote_average }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" name="origen" value="recomendaciones">
+                <button type="submit" class="btn-base btn-secondary" aria-label="Guardar {{ recomendacion.title }} en favoritos">
+                    Guardar
+                </button>
+            </form>
+        </div>
+    </div>
+</article>
